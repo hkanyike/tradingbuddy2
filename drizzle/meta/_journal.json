@@ -1,0 +1,83 @@
+{
+  "version": "7",
+  "dialect": "sqlite",
+  "entries": [
+    {
+      "idx": 0,
+      "version": "6",
+      "when": 1760820949240,
+      "tag": "0000_volatile_psynapse",
+      "breakpoints": true
+    },
+    {
+      "idx": 1,
+      "version": "6",
+      "when": 1760822957736,
+      "tag": "0001_keen_winter_soldier",
+      "breakpoints": true
+    },
+    {
+      "idx": 2,
+      "version": "6",
+      "when": 1760825810222,
+      "tag": "0002_supreme_warbound",
+      "breakpoints": true
+    },
+    {
+      "idx": 3,
+      "version": "6",
+      "when": 1760826456795,
+      "tag": "0003_breezy_otto_octavius",
+      "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "6",
+      "when": 1760831337232,
+      "tag": "0004_giant_famine",
+      "breakpoints": true
+    },
+    {
+      "idx": 5,
+      "version": "6",
+      "when": 1760831414275,
+      "tag": "0005_famous_norman_osborn",
+      "breakpoints": true
+    },
+    {
+      "idx": 6,
+      "version": "6",
+      "when": 1760837584792,
+      "tag": "0006_calm_kat_farrell",
+      "breakpoints": true
+    },
+    {
+      "idx": 7,
+      "version": "6",
+      "when": 1760839092907,
+      "tag": "0007_broad_chat",
+      "breakpoints": true
+    },
+    {
+      "idx": 8,
+      "version": "6",
+      "when": 1761154546565,
+      "tag": "0008_flowery_dakota_north",
+      "breakpoints": true
+    },
+    {
+      "idx": 9,
+      "version": "6",
+      "when": 1761235594458,
+      "tag": "0009_minor_hulk",
+      "breakpoints": true
+    },
+    {
+      "idx": 10,
+      "version": "6",
+      "when": 1761237218938,
+      "tag": "0010_bent_jubilee",
+      "breakpoints": true
+    }
+  ]
+}
