@@ -1,14 +1,18 @@
 // src/app/api/assets/[id]/route.ts
+import type { NextRequest } from 'next/server'
 import { NextResponse } from 'next/server'
 import { db } from '@/db'
 import { assets } from '@/db/schema'
 import { eq } from 'drizzle-orm'
 
-type RouteContext = { params: Record<string, string> }
-
-export async function GET(_req: Request, { params }: RouteContext) {
+export async function GET(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
-    const id = params.id
+    const params = await context.params
+    const { id } = params
+
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json({ error: 'Valid ID is required', code: 'INVALID_ID' }, { status: 400 })
     }
@@ -21,13 +25,18 @@ export async function GET(_req: Request, { params }: RouteContext) {
     return NextResponse.json(asset[0], { status: 200 })
   } catch (error) {
     console.error('GET error:', error)
-    return NextResponse.json({ error: 'Internal server error: ' + error }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function PUT(req: Request, { params }: RouteContext) {
+export async function PUT(
+  req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
-    const id = params.id
+    const params = await context.params
+    const { id } = params
+
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json({ error: 'Valid ID is required', code: 'INVALID_ID' }, { status: 400 })
     }
@@ -95,13 +104,18 @@ export async function PUT(req: Request, { params }: RouteContext) {
     return NextResponse.json(updated[0], { status: 200 })
   } catch (error) {
     console.error('PUT error:', error)
-    return NextResponse.json({ error: 'Internal server error: ' + error }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
 
-export async function DELETE(_req: Request, { params }: RouteContext) {
+export async function DELETE(
+  _req: NextRequest,
+  context: { params: Promise<{ id: string }> }
+): Promise<NextResponse> {
   try {
-    const id = params.id
+    const params = await context.params
+    const { id } = params
+
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json({ error: 'Valid ID is required', code: 'INVALID_ID' }, { status: 400 })
     }
@@ -119,6 +133,6 @@ export async function DELETE(_req: Request, { params }: RouteContext) {
     return NextResponse.json({ message: 'Asset deleted successfully', asset: deleted[0] }, { status: 200 })
   } catch (error) {
     console.error('DELETE error:', error)
-    return NextResponse.json({ error: 'Internal server error: ' + error }, { status: 500 })
+    return NextResponse.json({ error: 'Internal server error' }, { status: 500 })
   }
 }
