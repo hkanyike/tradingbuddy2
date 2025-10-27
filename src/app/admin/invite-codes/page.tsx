@@ -32,6 +32,7 @@ export default function AdminInviteCodesPage() {
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
+  const [isAdmin, setIsAdmin] = useState(false);
   
   const [newCode, setNewCode] = useState({
     code: "",
@@ -41,9 +42,42 @@ export default function AdminInviteCodesPage() {
 
   // Check if user is admin
   useEffect(() => {
-    if (!isPending && (!session?.user || !session.user.isAdmin)) {
-      toast.error("Admin access required");
-      router.push("/");
+    const checkAdminStatus = async () => {
+      if (!session?.user) {
+        if (!isPending) {
+          toast.error("Admin access required");
+          router.push("/");
+        }
+        return;
+      }
+
+      try {
+        const token = localStorage.getItem("bearer_token");
+        const response = await fetch("/api/admin/check", {
+          headers: {
+            Authorization: `Bearer ${token}`,
+          },
+        });
+
+        if (response.ok) {
+          const data = await response.json();
+          setIsAdmin(data.isAdmin);
+          if (!data.isAdmin) {
+            toast.error("Admin access required");
+            router.push("/");
+          }
+        } else {
+          toast.error("Admin access required");
+          router.push("/");
+        }
+      } catch (error) {
+        toast.error("Failed to verify admin status");
+        router.push("/");
+      }
+    };
+
+    if (!isPending) {
+      checkAdminStatus();
     }
   }, [session, isPending, router]);
 
@@ -73,10 +107,10 @@ export default function AdminInviteCodesPage() {
   };
 
   useEffect(() => {
-    if (session?.user?.isAdmin) {
+    if (isAdmin && session?.user) {
       fetchInviteCodes();
     }
-  }, [session]);
+  }, [isAdmin, session]);
 
   const handleCreateCode = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -142,7 +176,7 @@ export default function AdminInviteCodesPage() {
     );
   }
 
-  if (!session?.user?.isAdmin) {
+  if (!isAdmin || !session?.user) {
     return null;
   }
 
