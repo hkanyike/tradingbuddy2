@@ -1,3 +1,4 @@
+﻿import type { RouteCtx } from '@/types/route-context'
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { watchlistRecommendations } from '@/db/schema';
@@ -5,7 +6,7 @@ import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteCtx<{ id: string }>
 ) {
   try {
     // Validate ID parameter

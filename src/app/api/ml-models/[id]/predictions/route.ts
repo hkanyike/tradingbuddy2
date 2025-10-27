@@ -1,3 +1,4 @@
+﻿import type { RouteCtx } from '@/types/route-context'
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { mlModels, mlPredictions, assets } from '@/db/schema';
@@ -5,7 +6,7 @@ import { eq, and, desc } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteCtx<{ id: string }>
 ) {
   try {
     const modelId = params.id;

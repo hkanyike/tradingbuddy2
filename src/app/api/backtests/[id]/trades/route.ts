@@ -1,107 +1,89 @@
-import { NextRequest, NextResponse } from 'next/server';
-import { db } from '@/db';
-import { backtests, backtestTrades } from '@/db/schema';
-import { eq, and, desc } from 'drizzle-orm';
-import { getCurrentUser } from '@/lib/auth';
+﻿import { NextRequest, NextResponse } from 'next/server'
+import type { RouteCtx } from '@/types/route-context'
+import { db } from '@/db'
+import { backtests, backtestTrades } from '@/db/schema'
+import { eq, and, desc } from 'drizzle-orm'
+import { getCurrentUser } from '@/lib/auth'
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: { id: string } }
-) {
+// Type the WHOLE context, then destructure in the handler
+type RouteContext = RouteCtx<{ id: string }>
+
+export async function GET(request: NextRequest, { params }: RouteContext) {
   try {
-    // Authentication check
-    const user = await getCurrentUser(request);
+    // Auth
+    const user = await getCurrentUser(request)
     if (!user) {
-      return NextResponse.json(
-        { error: 'Authentication required' },
-        { status: 401 }
-      );
+      return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
 
-    // Extract and validate backtest ID
-    const backtestId = params.id;
-    if (!backtestId || isNaN(parseInt(backtestId))) {
+    // Params (must await in Next 15)
+    const { id } = await params
+    const parsedBacktestId = Number(id)
+    if (!id || Number.isNaN(parsedBacktestId)) {
       return NextResponse.json(
         { error: 'Valid backtest ID is required', code: 'INVALID_BACKTEST_ID' },
         { status: 400 }
-      );
+      )
     }
 
-    const parsedBacktestId = parseInt(backtestId);
-
-    // Verify backtest exists and belongs to the authenticated user
-    const backtest = await db
+    // Ensure the backtest exists and belongs to the user
+    const bt = await db
       .select()
       .from(backtests)
-      .where(
-        and(
-          eq(backtests.id, parsedBacktestId),
-          eq(backtests.userId, user.id)
-        )
-      )
-      .limit(1);
+      .where(and(eq(backtests.id, parsedBacktestId), eq(backtests.userId, user.id)))
+      .limit(1)
 
-    if (backtest.length === 0) {
+    if (bt.length === 0) {
       return NextResponse.json(
         { error: 'Backtest not found', code: 'BACKTEST_NOT_FOUND' },
         { status: 404 }
-      );
+      )
     }
 
-    // Parse query parameters
-    const { searchParams } = new URL(request.url);
-    const limit = Math.min(parseInt(searchParams.get('limit') ?? '100'), 500);
-    const offset = parseInt(searchParams.get('offset') ?? '0');
-    const tradeType = searchParams.get('tradeType');
-    const side = searchParams.get('side');
-    const exitReason = searchParams.get('exitReason');
+    // Query params
+    const { searchParams } = new URL(request.url)
+    const limit = Math.min(Number(searchParams.get('limit') ?? '100'), 500)
+    const offset = Number(searchParams.get('offset') ?? '0')
+    const tradeType = searchParams.get('tradeType') ?? undefined
+    const side = searchParams.get('side') ?? undefined
+    const exitReason = searchParams.get('exitReason') ?? undefined
 
-    // Build query with filters
-    const conditions = [eq(backtestTrades.backtestId, parsedBacktestId)];
-
+    // Validate filters
     if (tradeType) {
-      const validTradeTypes = ['STOCK', 'OPTION', 'SPREAD', 'STRADDLE', 'STRANGLE', 'CALENDAR'];
-      if (!validTradeTypes.includes(tradeType)) {
+      const valid = ['STOCK', 'OPTION', 'SPREAD', 'STRADDLE', 'STRANGLE', 'CALENDAR']
+      if (!valid.includes(tradeType)) {
         return NextResponse.json(
-          { 
-            error: 'Invalid trade type. Must be one of: STOCK, OPTION, SPREAD, STRADDLE, STRANGLE, CALENDAR',
-            code: 'INVALID_TRADE_TYPE' 
-          },
+          { error: 'Invalid trade type. Must be one of: ' + valid.join(', '), code: 'INVALID_TRADE_TYPE' },
           { status: 400 }
-        );
+        )
       }
-      conditions.push(eq(backtestTrades.tradeType, tradeType));
     }
-
     if (side) {
-      const validSides = ['BUY', 'SELL'];
-      if (!validSides.includes(side)) {
+      const valid = ['BUY', 'SELL']
+      if (!valid.includes(side)) {
         return NextResponse.json(
-          { 
-            error: 'Invalid side. Must be one of: BUY, SELL',
-            code: 'INVALID_SIDE' 
-          },
+          { error: 'Invalid side. Must be one of: ' + valid.join(', '), code: 'INVALID_SIDE' },
           { status: 400 }
-        );
+        )
       }
-      conditions.push(eq(backtestTrades.side, side));
     }
-
     if (exitReason) {
-      const validExitReasons = ['PROFIT_TARGET', 'STOP_LOSS', 'TIME_STOP', 'SIGNAL_EXIT'];
-      if (!validExitReasons.includes(exitReason)) {
+      const valid = ['PROFIT_TARGET', 'STOP_LOSS', 'TIME_STOP', 'SIGNAL_EXIT']
+      if (!valid.includes(exitReason)) {
         return NextResponse.json(
-          { 
-            error: 'Invalid exit reason. Must be one of: PROFIT_TARGET, STOP_LOSS, TIME_STOP, SIGNAL_EXIT',
-            code: 'INVALID_EXIT_REASON' 
-          },
+          { error: 'Invalid exit reason. Must be one of: ' + valid.join(', '), code: 'INVALID_EXIT_REASON' },
           { status: 400 }
-        );
+        )
       }
-      conditions.push(eq(backtestTrades.exitReason, exitReason));
     }
 
-    // Execute query
+    // Build WHERE incrementally (keeps TS happy)
+    let whereExpr = eq(backtestTrades.backtestId, parsedBacktestId)
+    if (tradeType) whereExpr = and(whereExpr, eq(backtestTrades.tradeType, tradeType))
+    if (side) whereExpr = and(whereExpr, eq(backtestTrades.side, side))
+    if (exitReason) whereExpr = and(whereExpr, eq(backtestTrades.exitReason, exitReason))
+
+    // Fetch trades
     const trades = await db
       .select({
         id: backtestTrades.id,
@@ -127,19 +109,17 @@ export async function GET(
         greeksAtExit: backtestTrades.greeksAtExit,
       })
       .from(backtestTrades)
-      .where(and(...conditions))
+      .where(whereExpr)
       .orderBy(desc(backtestTrades.entryDate))
       .limit(limit)
-      .offset(offset);
+      .offset(offset)
 
-    return NextResponse.json(trades, { status: 200 });
+    return NextResponse.json(trades, { status: 200 })
   } catch (error) {
-    console.error('GET /api/backtests/[id]/trades error:', error);
+    console.error('GET /api/backtests/[id]/trades error:', error)
     return NextResponse.json(
-      { 
-        error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error')
-      },
+      { error: 'Internal server error: ' + (error instanceof Error ? error.message : 'Unknown error') },
       { status: 500 }
-    );
+    )
   }
 }

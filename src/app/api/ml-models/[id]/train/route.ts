@@ -1,3 +1,4 @@
+﻿import type { RouteCtx } from '@/types/route-context'
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { mlModels, mlTrainingRuns } from '@/db/schema';
@@ -6,7 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: RouteCtx<{ id: string }>
 ) {
   try {
     // Authentication check
