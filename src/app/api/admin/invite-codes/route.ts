@@ -7,8 +7,7 @@ import { headers } from 'next/headers';
 
 // Helper function to get authenticated user
 async function getAuthenticatedUser(request: NextRequest) {
-  const session = await auth.api.getSession({
-    headers: await headers(),
+  const session = await getServerSession(authOptions),
   });
 
   if (!session) {
