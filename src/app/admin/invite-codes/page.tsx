@@ -1,13 +1,26 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useEffect, useMemo, useState } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "next-auth/react";
 import { Button } from "@/components/ui/button";
 import { Input } from "@/components/ui/input";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
+import {
+  Card,
+  CardContent,
+  CardDescription,
+  CardHeader,
+  CardTitle,
+} from "@/components/ui/card";
 import { Label } from "@/components/ui/label";
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "@/components/ui/table";
+import {
+  Table,
+  TableBody,
+  TableCell,
+  TableHead,
+  TableHeader,
+  TableRow,
+} from "@/components/ui/table";
 import { Badge } from "@/components/ui/badge";
 import { Loader2, Plus, Shield, Copy, CheckCircle2 } from "lucide-react";
 import { toast } from "sonner";
@@ -25,81 +38,52 @@ interface InviteCode {
 
 export default function AdminInviteCodesPage() {
   const router = useRouter();
-  const { data: session, isPending } = useSession();
-  
+  const { data: session, status } = useSession(); // "loading" | "authenticated" | "unauthenticated"
+
   const [inviteCodes, setInviteCodes] = useState<InviteCode[]>([]);
   const [isLoading, setIsLoading] = useState(true);
   const [isCreating, setIsCreating] = useState(false);
   const [showCreateForm, setShowCreateForm] = useState(false);
   const [copiedCode, setCopiedCode] = useState<string | null>(null);
-  const [isAdmin, setIsAdmin] = useState(false);
-  
+
+  // Local form state
   const [newCode, setNewCode] = useState({
     code: "",
     maxUses: "1",
     expiresAt: "",
   });
 
-  // Check if user is admin
+  // Derived admin flag (type-safe with next-auth.d.ts augmentation)
+  const isAdmin = !!session?.user?.isAdmin;
+
+  // Redirect non-admins as soon as we know
   useEffect(() => {
-    const checkAdminStatus = async () => {
-      if (!session?.user) {
-        if (!isPending) {
-          toast.error("Admin access required");
-          router.push("/");
-        }
-        return;
-      }
-
-      try {
-        const token = localStorage.getItem("bearer_token");
-        const response = await fetch("/api/admin/check", {
-          headers: {
-            Authorization: `Bearer ${token}`,
-          },
-        });
-
-        if (response.ok) {
-          const data = await response.json();
-          setIsAdmin(data.isAdmin);
-          if (!data.isAdmin) {
-            toast.error("Admin access required");
-            router.push("/");
-          }
-        } else {
-          toast.error("Admin access required");
-          router.push("/");
-        }
-      } catch (error) {
-        toast.error("Failed to verify admin status");
-        router.push("/");
-      }
-    };
-
-    if (!isPending) {
-      checkAdminStatus();
+    if (status === "loading") return;
+    if (!session?.user || !isAdmin) {
+      toast.error("Admin access required");
+      router.replace("/");
     }
-  }, [session, isPending, router]);
+  }, [status, session, isAdmin, router]);
 
-  // Fetch invite codes
+  // Fetch invite codes (after admin gate passes)
   const fetchInviteCodes = async () => {
     setIsLoading(true);
     try {
-      const token = localStorage.getItem("bearer_token");
-      const response = await fetch("/api/admin/invite-codes?includeExpired=true", {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
+      const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null;
+      const res = await fetch("/api/admin/invite-codes?includeExpired=true", {
+        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        cache: "no-store",
       });
 
-      if (response.ok) {
-        const data = await response.json();
-        setInviteCodes(data);
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to fetch invite codes");
+      if (!res.ok) {
+        const err = await safeJson(res);
+        toast.error(err?.error || "Failed to fetch invite codes");
+        return;
       }
-    } catch (error) {
+
+      const data: InviteCode[] = await res.json();
+      setInviteCodes(Array.isArray(data) ? data : []);
+    } catch {
       toast.error("Failed to load invite codes");
     } finally {
       setIsLoading(false);
@@ -107,45 +91,51 @@ export default function AdminInviteCodesPage() {
   };
 
   useEffect(() => {
-    if (isAdmin && session?.user) {
+    if (status === "authenticated" && isAdmin) {
       fetchInviteCodes();
     }
-  }, [isAdmin, session]);
+  }, [status, isAdmin]);
 
   const handleCreateCode = async (e: React.FormEvent) => {
     e.preventDefault();
-    
-    if (!newCode.code.trim()) {
+
+    const trimmed = newCode.code.trim();
+    if (!trimmed) {
       toast.error("Code cannot be empty");
       return;
     }
 
+    const parsedMax = parseInt(newCode.maxUses, 10);
+    const maxUses = Number.isFinite(parsedMax) && parsedMax > 0 ? parsedMax : 1;
+
+    // datetime-local returns local time; send as ISO if provided
+    const expiresAt =
+      newCode.expiresAt ? new Date(newCode.expiresAt).toISOString() : null;
+
     setIsCreating(true);
     try {
-      const token = localStorage.getItem("bearer_token");
-      const response = await fetch("/api/admin/invite-codes", {
+      const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null;
+      const res = await fetch("/api/admin/invite-codes", {
         method: "POST",
         headers: {
           "Content-Type": "application/json",
-          Authorization: `Bearer ${token}`,
+          ...(token ? { Authorization: `Bearer ${token}` } : {}),
         },
-        body: JSON.stringify({
-          code: newCode.code.trim(),
-          maxUses: parseInt(newCode.maxUses) || 1,
-          expiresAt: newCode.expiresAt || null,
-        }),
+        cache: "no-store",
+        body: JSON.stringify({ code: trimmed, maxUses, expiresAt }),
       });
 
-      if (response.ok) {
-        toast.success("Invite code created successfully!");
-        setNewCode({ code: "", maxUses: "1", expiresAt: "" });
-        setShowCreateForm(false);
-        fetchInviteCodes();
-      } else {
-        const error = await response.json();
-        toast.error(error.error || "Failed to create invite code");
+      if (!res.ok) {
+        const err = await safeJson(res);
+        toast.error(err?.error || "Failed to create invite code");
+        return;
       }
-    } catch (error) {
+
+      toast.success("Invite code created successfully!");
+      setNewCode({ code: "", maxUses: "1", expiresAt: "" });
+      setShowCreateForm(false);
+      fetchInviteCodes();
+    } catch {
       toast.error("An error occurred while creating the code");
     } finally {
       setIsCreating(false);
@@ -153,22 +143,29 @@ export default function AdminInviteCodesPage() {
   };
 
   const copyToClipboard = (code: string) => {
-    navigator.clipboard.writeText(code);
-    setCopiedCode(code);
-    toast.success("Code copied to clipboard!");
-    setTimeout(() => setCopiedCode(null), 2000);
+    navigator.clipboard.writeText(code).then(
+      () => {
+        setCopiedCode(code);
+        toast.success("Code copied to clipboard!");
+        window.setTimeout(() => setCopiedCode(null), 2000);
+      },
+      () => toast.error("Failed to copy")
+    );
   };
 
   const formatDate = (dateString: string | null) => {
     if (!dateString) return "Never";
-    return new Date(dateString).toLocaleDateString("en-US", {
+    const d = new Date(dateString);
+    if (Number.isNaN(d.getTime())) return "—";
+    return d.toLocaleDateString("en-US", {
       year: "numeric",
       month: "short",
       day: "numeric",
     });
   };
 
-  if (isPending || isLoading) {
+  // Loading states (page-level)
+  if (status === "loading" || isLoading) {
     return (
       <div className="min-h-screen bg-background flex items-center justify-center">
         <Loader2 className="h-8 w-8 animate-spin" />
@@ -176,9 +173,17 @@ export default function AdminInviteCodesPage() {
     );
   }
 
-  if (!isAdmin || !session?.user) {
-    return null;
-  }
+  // If not admin (already redirected), render nothing
+  if (!isAdmin) return null;
+
+  const totalUses = useMemo(
+    () => inviteCodes.reduce((sum, c) => sum + (c.currentUses || 0), 0),
+    [inviteCodes]
+  );
+  const activeCount = useMemo(
+    () => inviteCodes.filter((c) => c.isActive).length,
+    [inviteCodes]
+  );
 
   return (
     <div className="min-h-screen bg-background">
@@ -214,17 +219,13 @@ export default function AdminInviteCodesPage() {
             <Card>
               <CardHeader className="pb-3">
                 <CardDescription>Active Codes</CardDescription>
-                <CardTitle className="text-3xl">
-                  {inviteCodes.filter(c => c.isActive).length}
-                </CardTitle>
+                <CardTitle className="text-3xl">{activeCount}</CardTitle>
               </CardHeader>
             </Card>
             <Card>
               <CardHeader className="pb-3">
                 <CardDescription>Total Uses</CardDescription>
-                <CardTitle className="text-3xl">
-                  {inviteCodes.reduce((sum, c) => sum + c.currentUses, 0)}
-                </CardTitle>
+                <CardTitle className="text-3xl">{totalUses}</CardTitle>
               </CardHeader>
             </Card>
           </div>
@@ -239,10 +240,7 @@ export default function AdminInviteCodesPage() {
                     Create and manage invite codes for new users
                   </CardDescription>
                 </div>
-                <Button
-                  onClick={() => setShowCreateForm(!showCreateForm)}
-                  className="gap-2"
-                >
+                <Button onClick={() => setShowCreateForm((s) => !s)} className="gap-2">
                   <Plus className="h-4 w-4" />
                   New Code
                 </Button>
@@ -259,7 +257,9 @@ export default function AdminInviteCodesPage() {
                         id="code"
                         placeholder="e.g., BETA-2024"
                         value={newCode.code}
-                        onChange={(e) => setNewCode({ ...newCode, code: e.target.value })}
+                        onChange={(e) =>
+                          setNewCode({ ...newCode, code: e.target.value })
+                        }
                         required
                         disabled={isCreating}
                       />
@@ -272,7 +272,9 @@ export default function AdminInviteCodesPage() {
                         min="1"
                         placeholder="1"
                         value={newCode.maxUses}
-                        onChange={(e) => setNewCode({ ...newCode, maxUses: e.target.value })}
+                        onChange={(e) =>
+                          setNewCode({ ...newCode, maxUses: e.target.value })
+                        }
                         required
                         disabled={isCreating}
                       />
@@ -283,7 +285,9 @@ export default function AdminInviteCodesPage() {
                         id="expiresAt"
                         type="datetime-local"
                         value={newCode.expiresAt}
-                        onChange={(e) => setNewCode({ ...newCode, expiresAt: e.target.value })}
+                        onChange={(e) =>
+                          setNewCode({ ...newCode, expiresAt: e.target.value })
+                        }
                         disabled={isCreating}
                       />
                     </div>
@@ -319,7 +323,7 @@ export default function AdminInviteCodesPage() {
                   No invite codes yet. Create one to get started.
                 </div>
               ) : (
-                <div className="rounded-md border">
+                <div className="rounded-md border overflow-x-auto">
                   <Table>
                     <TableHeader>
                       <TableRow>
@@ -333,9 +337,11 @@ export default function AdminInviteCodesPage() {
                     </TableHeader>
                     <TableBody>
                       {inviteCodes.map((code) => {
-                        const isExpired = code.expiresAt && new Date(code.expiresAt) < new Date();
+                        const isExpired =
+                          !!code.expiresAt &&
+                          new Date(code.expiresAt).getTime() < Date.now();
                         const isExhausted = code.currentUses >= code.maxUses;
-                        
+
                         return (
                           <TableRow key={code.id}>
                             <TableCell className="font-mono font-medium">
@@ -390,4 +396,13 @@ export default function AdminInviteCodesPage() {
       </main>
     </div>
   );
+}
+
+/** Safely parse JSON body from a non-OK response without throwing */
+async function safeJson(res: Response) {
+  try {
+    return await res.json();
+  } catch {
+    return null;
+  }
 }
