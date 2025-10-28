@@ -2,7 +2,7 @@ import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { account } from '@/db/schema';
 import { eq, and } from 'drizzle-orm';
-import bcrypt from 'bcrypt';
+import bcrypt from 'bcryptjs';
 import crypto from 'crypto';
 
 export async function POST(request: NextRequest) {
@@ -104,3 +104,4 @@ export async function POST(request: NextRequest) {
     }, { status: 500 });
   }
 }
+

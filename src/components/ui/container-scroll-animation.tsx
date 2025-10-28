@@ -93,3 +93,4 @@ export const Card = ({
     </motion.div>
   );
 };
+

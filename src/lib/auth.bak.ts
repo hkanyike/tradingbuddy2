@@ -1,4 +1,4 @@
-﻿// src/lib/auth.ts
+// src/lib/auth.ts
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
 import type { Session } from "next-auth";
@@ -33,3 +33,4 @@ export async function getJwtUserFromRequest(req: NextRequest) {
   const token = await getToken({ req, secret: process.env.NEXTAUTH_SECRET });
   return token ?? null;
 }
+

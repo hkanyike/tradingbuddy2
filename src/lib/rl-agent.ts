@@ -496,3 +496,4 @@ export function createRLAgent(): ReinforcementLearningAgent {
 export function getRLAgent(): ReinforcementLearningAgent | null {
   return rlAgentInstance;
 }
+

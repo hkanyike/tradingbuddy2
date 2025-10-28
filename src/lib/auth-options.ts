@@ -47,3 +47,4 @@ export const authOptions: NextAuthOptions = {
     signIn: "/auth/signin",
   },
 };
+

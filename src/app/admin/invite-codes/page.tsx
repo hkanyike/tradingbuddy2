@@ -406,3 +406,4 @@ async function safeJson(res: Response) {
     return null;
   }
 }
+

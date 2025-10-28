@@ -1,4 +1,4 @@
-﻿// src/app/admin/layout.tsx
+// src/app/admin/layout.tsx
 "use client";
 
 import { useEffect } from "react";
@@ -27,3 +27,4 @@ export default function AdminLayout({ children }: { children: React.ReactNode })
 
   return <>{children}</>;
 }
+

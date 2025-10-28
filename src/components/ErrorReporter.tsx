@@ -134,3 +134,4 @@ export default function ErrorReporter({ error, reset }: ReporterProps) {
     </html>
   );
 }
+
