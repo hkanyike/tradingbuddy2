@@ -144,3 +144,6 @@ export default function ResetPasswordPage() {
   );
 }
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
+
