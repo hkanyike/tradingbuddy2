@@ -33,7 +33,7 @@ import { authClient } from "@/lib/auth-client";
 import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createAlpacaWebSocket, type AlpacaWebSocketClient } from "@/lib/alpaca-websocket";
-import { createAIRecommendationEngine, type Recommendation } from "@/lib/ai-recommendation-engine";
+import { mlDashboardIntegration } from "@/lib/ml/ml-dashboard-integration";
 import { marketDataService } from "@/lib/market-data-service";
 import { NewsFeed } from "@/components/dashboard/news-feed";
 import { SentimentIndicator } from "@/components/dashboard/sentiment-indicator";
@@ -239,8 +239,9 @@ export default function DashboardPage() {
   const [updateInterval, setUpdateInterval] = useState(5000);
   const [alpacaWs, setAlpacaWs] = useState<AlpacaWebSocketClient | null>(null);
   const [wsConnected, setWsConnected] = useState(false);
-  const [aiRecommendations, setAiRecommendations] = useState<Recommendation[]>([]);
-  const [aiEngine] = useState(() => createAIRecommendationEngine());
+  const [aiRecommendations, setAiRecommendations] = useState<any[]>([]);
+  const [mlSignals, setMlSignals] = useState<any[]>([]);
+  const [mlPredictions, setMlPredictions] = useState<any[]>([]);
   const [watchlistSymbols, setWatchlistSymbols] = useState<string[]>([]);
   const [marketIndexes, setMarketIndexes] = useState<MarketIndex[]>([]);
   const [stockQuotes, setStockQuotes] = useState<StockQuote[]>([]);
@@ -297,6 +298,7 @@ export default function DashboardPage() {
     if (!isPending && session?.user && !hasLoadedInitialData.current) {
       hasLoadedInitialData.current = true;
       loadAllData();
+      loadMLData();
     }
   }, [session, isPending]);
 
@@ -798,6 +800,35 @@ export default function DashboardPage() {
       if (isLoading) {
         setIsLoading(false);
       }
+    }
+  };
+
+  const loadMLData = async () => {
+    try {
+      // Initialize ML integration
+      await mlDashboardIntegration.initialize();
+
+      // Get watchlist symbols
+      const watchlistSymbols = watchlist.map(item => item.symbol || item.asset?.symbol).filter(Boolean);
+      
+      if (watchlistSymbols.length > 0) {
+        // Get ML recommendations
+        const recommendations = await mlDashboardIntegration.getWatchlistRecommendations(watchlistSymbols);
+        setAiRecommendations(recommendations);
+
+        // Get ML signals
+        const signals = await mlDashboardIntegration.getMarketSignals(watchlistSymbols);
+        setMlSignals(signals);
+
+        // Get ML predictions
+        const predictions = await mlDashboardIntegration.getPricePredictions(watchlistSymbols);
+        setMlPredictions(predictions);
+      }
+
+      console.log('ML data loaded successfully');
+    } catch (error) {
+      console.error('Error loading ML data:', error);
+      // Don't show error to user as ML is optional
     }
   };
 
@@ -1804,36 +1835,42 @@ export default function DashboardPage() {
                       aiRecommendations.slice(0, 5).map((rec, index) => {
                         const asset = assets.find(a => a.symbol === rec.symbol);
                         const isInWatchlist = asset ? watchlistAssets.some(w => w.assetId === asset.id) : false;
-                        const isRLRecommendation = rec.recommendationReason?.includes('🤖 RL Agent');
+                        const isMLRecommendation = rec.modelVersion?.includes('ensemble');
                         
                         return (
                           <button
-                            key={rec.id}
+                            key={`${rec.symbol}-${index}`}
                             onClick={() => {
                               if (asset) {
                                 openAssetDetails(asset);
                               }
                             }}
                             className={`w-full p-3 rounded-lg hover:bg-muted/70 transition-all duration-200 border cursor-pointer text-left ${
-                              isRLRecommendation 
-                                ? 'bg-purple-500/5 border-purple-500/30' 
+                              isMLRecommendation 
+                                ? 'bg-blue-500/5 border-blue-500/30' 
                                 : 'bg-muted/50 border-border/50'
                             }`}
                           >
                             <div className="flex items-start justify-between gap-3 mb-1.5">
                               <div className="flex items-center gap-2 flex-1">
-                                {isRLRecommendation ? (
-                                  <Cpu className="h-3.5 w-3.5 text-purple-500 flex-shrink-0" />
+                                {isMLRecommendation ? (
+                                  <Brain className="h-3.5 w-3.5 text-blue-500 flex-shrink-0" />
                                 ) : (
                                   <Sparkles className="h-3.5 w-3.5 text-primary flex-shrink-0" />
                                 )}
                                 <span className="text-sm font-semibold">{rec.symbol}</span>
-                                <Badge variant="outline" className="text-xs font-mono">
-                                  {((rec.confidenceScore || 0) * 100).toFixed(0)}%
+                                <Badge 
+                                  variant={rec.action === 'buy' ? 'default' : rec.action === 'sell' ? 'destructive' : 'outline'}
+                                  className="text-xs font-mono"
+                                >
+                                  {rec.action.toUpperCase()}
                                 </Badge>
-                                {isRLRecommendation && (
-                                  <Badge variant="outline" className="text-xs bg-purple-500/10 border-purple-500/30">
-                                    RL
+                                <Badge variant="outline" className="text-xs font-mono">
+                                  {((rec.confidence || 0) * 100).toFixed(0)}%
+                                </Badge>
+                                {isMLRecommendation && (
+                                  <Badge variant="outline" className="text-xs bg-blue-500/10 border-blue-500/30">
+                                    ML
                                   </Badge>
                                 )}
                                 <Eye className="h-3.5 w-3.5 text-muted-foreground group-hover:text-primary transition-colors ml-auto flex-shrink-0" />
@@ -1862,7 +1899,30 @@ export default function DashboardPage() {
                               )}
                             </div>
                             <div className="text-xs text-muted-foreground leading-relaxed pl-5">
-                              {rec.recommendationReason}
+                              {rec.reasoning}
+                              {rec.targetPrice && (
+                                <div className="mt-1 flex gap-2 text-xs">
+                                  <span>Target: ${rec.targetPrice.toFixed(2)}</span>
+                                  {rec.stopLoss && <span>Stop: ${rec.stopLoss.toFixed(2)}</span>}
+                                </div>
+                              )}
+                              {rec.newsImpact && (
+                                <div className="mt-2 p-2 bg-blue-50 dark:bg-blue-950/20 rounded border-l-2 border-blue-500">
+                                  <div className="flex items-center gap-1 text-xs font-medium text-blue-700 dark:text-blue-300 mb-1">
+                                    <Newspaper className="h-3 w-3" />
+                                    News Impact
+                                  </div>
+                                  <div className="text-xs text-blue-600 dark:text-blue-400">
+                                    Sentiment: {(rec.newsImpact.sentiment * 100).toFixed(1)}% 
+                                    (Confidence: {(rec.newsImpact.confidence * 100).toFixed(1)}%)
+                                  </div>
+                                  {rec.newsImpact.recentNews.length > 0 && (
+                                    <div className="mt-1 text-xs text-blue-600 dark:text-blue-400">
+                                      Latest: {rec.newsImpact.recentNews[0].title.substring(0, 50)}...
+                                    </div>
+                                  )}
+                                </div>
+                              )}
                             </div>
                           </button>
                         );

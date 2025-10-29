@@ -1,853 +1,553 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import Link from "next/link";
-import { TrendingUp, Brain, Play, Upload, Download, Zap, Shield, Database, TestTube, BarChart3, Newspaper, Settings as SettingsIcon, Menu, Wifi, WifiOff, CheckCircle2, XCircle, Loader2, AlertCircle } from "lucide-react";
-import { Button } from "@/components/ui/button";
-import { Card, CardContent, CardDescription, CardHeader, CardTitle } from "@/components/ui/card";
-import { Input } from "@/components/ui/input";
-import { Label } from "@/components/ui/label";
-import { Badge } from "@/components/ui/badge";
-import { Progress } from "@/components/ui/progress";
-import {
-  Sheet,
-  SheetContent,
-  SheetHeader,
-  SheetTitle,
-  SheetTrigger,
-} from "@/components/ui/sheet";
-import {
-  Dialog,
-  DialogContent,
-  DialogDescription,
-  DialogHeader,
-  DialogTitle,
-  DialogFooter,
-} from "@/components/ui/dialog";
-import { ThemeToggle } from "@/components/theme-toggle";
-import { useSession } from "@/lib/auth-client";
-import { useRouter } from "next/navigation";
-import { toast } from "sonner";
+import { useEffect, useState } from 'react';
+import { Card, CardContent, CardDescription, CardHeader, CardTitle } from '@/components/ui/card';
+import { Button } from '@/components/ui/button';
+import { Badge } from '@/components/ui/badge';
+import { Tabs, TabsContent, TabsList, TabsTrigger } from '@/components/ui/tabs';
+import { Progress } from '@/components/ui/progress';
+import { 
+  Brain, 
+  Play, 
+  Pause, 
+  Trash2, 
+  BarChart3, 
+  TrendingUp, 
+  Activity,
+  Clock,
+  CheckCircle,
+  XCircle,
+  AlertCircle,
+  Settings,
+  Download,
+  Upload
+} from 'lucide-react';
+import { LoadingSpinner } from '@/components/ui/loading-spinner';
+import { EmptyState } from '@/components/ui/empty-state';
+import { toast } from 'sonner';
 
-interface MLModel {
-  id: number;
+interface Model {
+  id: string;
   name: string;
-  modelType: string;
   version: string;
-  status: string;
-  description?: string;
-  hyperparameters?: any;
-  featureImportance?: any;
-  strategyId?: number;
-  createdAt: string;
-  updatedAt: string;
-}
-
-interface TrainingRun {
-  id: number;
-  modelId: number;
-  userId: string;
-  datasetStartDate: string;
-  datasetEndDate: string;
-  trainingSamples: number;
-  validationSamples: number;
-  trainingMetrics: any;
-  validationMetrics: any;
-  overfittingScore?: number;
-  trainingDurationSeconds: number;
-  status: string;
-  errorMessage?: string;
-  createdAt: string;
-  completedAt?: string;
-}
-
-interface Strategy {
-  id: number;
-  name: string;
-  strategyType: string;
+  type: 'classification' | 'regression' | 'time_series';
+  algorithm: 'xgboost' | 'lstm' | 'transformer' | 'random_forest' | 'svm';
+  status: 'training' | 'ready' | 'failed' | 'deprecated';
+  metrics: {
+    accuracy?: number;
+    precision?: number;
+    recall?: number;
+    f1Score?: number;
+    mse?: number;
+    mae?: number;
+    rmse?: number;
+    r2Score?: number;
+    sharpeRatio?: number;
+    maxDrawdown?: number;
+    winRate?: number;
+    profitFactor?: number;
+  };
+  trainingDataSize: number;
+  trainedAt: number;
+  featureImportance?: Record<string, number>;
 }
 
 export default function ModelsPage() {
-  const { data: session, status } = useSession();
-  const isPending = status === 'loading';
-  const router = useRouter();
-  const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
-  const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
-  const [isLiveUpdateEnabled, setIsLiveUpdateEnabled] = useState(true);
-
-  const [models, setModels] = useState<MLModel[]>([]);
-  const [strategies, setStrategies] = useState<Strategy[]>([]);
+  const [models, setModels] = useState<Model[]>([]);
   const [isLoading, setIsLoading] = useState(true);
-  const [isTraining, setIsTraining] = useState(false);
-  const [trainingDialogOpen, setTrainingDialogOpen] = useState(false);
-  const [detailsDialogOpen, setDetailsDialogOpen] = useState(false);
-  const [selectedModel, setSelectedModel] = useState<MLModel | null>(null);
-  const [trainingRuns, setTrainingRuns] = useState<TrainingRun[]>([]);
-  const [loadingDetails, setLoadingDetails] = useState(false);
-
-  // Training form state
-  const [trainingForm, setTrainingForm] = useState({
-    modelType: "xgboost",
-    name: "",
-    strategyId: "",
-    version: "v1.0.0",
-    datasetStartDate: "2023-01-01",
-    datasetEndDate: "2024-12-31",
-    trainingSamples: 10000,
-    validationSamples: 2500,
-    maxDepth: 6,
-    learningRate: 0.05,
-    nEstimators: 600,
-  });
+  const [selectedTab, setSelectedTab] = useState('overview');
+  const [trainingProgress, setTrainingProgress] = useState<Record<string, number>>({});
 
   useEffect(() => {
-    if (!isPending && !session?.user) {
-      router.push("/sign-in");
-      return;
-    }
-  }, [session, isPending, router]);
+    loadModels();
+  }, []);
 
-  useEffect(() => {
-    if (!isPending && session?.user) {
-      loadData();
-    }
-  }, [session, isPending]);
-
-  useEffect(() => {
-    if (!isLiveUpdateEnabled || !session) return;
-
-    const interval = setInterval(() => {
-      loadData();
-      setLastUpdate(new Date());
-    }, 5000);
-
-    return () => clearInterval(interval);
-  }, [isLiveUpdateEnabled, session]);
-
-  const loadData = async () => {
+  const loadModels = async () => {
     try {
-      const token = localStorage.getItem("bearer_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
-
-      const [modelsRes, strategiesRes] = await Promise.all([
-        fetch("/api/ml-models", { headers }),
-        fetch("/api/strategies", { headers })
-      ]);
-
-      const modelsData = await modelsRes.json();
-      const strategiesData = await strategiesRes.json();
-
-      setModels(Array.isArray(modelsData) ? modelsData : []);
-      setStrategies(Array.isArray(strategiesData) ? strategiesData : []);
-      setIsLoading(false);
-    } catch (error) {
-      console.error("Error loading data:", error);
-      toast.error("Failed to load ML models");
-      setIsLoading(false);
-    }
-  };
-
-  const handleShowDetails = async (model: MLModel) => {
-    setSelectedModel(model);
-    setDetailsDialogOpen(true);
-    setLoadingDetails(true);
-    
-    try {
-      const token = localStorage.getItem("bearer_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
-      
-      // Fetch training runs for this model
-      const runsRes = await fetch(`/api/ml-models/${model.id}/train`, { headers });
-      if (runsRes.ok) {
-        const runsData = await runsRes.json();
-        setTrainingRuns(Array.isArray(runsData) ? runsData : []);
+      setIsLoading(true);
+      const response = await fetch('/api/ml/models');
+      if (response.ok) {
+        const data = await response.json();
+        setModels(data.models || []);
+      } else {
+        console.error('Failed to load models');
+        toast.error('Failed to load models');
       }
     } catch (error) {
-      console.error("Error loading model details:", error);
+      console.error('Error loading models:', error);
+      toast.error('Error loading models');
     } finally {
-      setLoadingDetails(false);
+      setIsLoading(false);
     }
   };
 
-  const handleTrainModel = async () => {
-    if (!trainingForm.name.trim()) {
-      toast.error("Please enter a model name");
-      return;
-    }
-
-    setIsTraining(true);
-
+  const trainNewModel = async () => {
     try {
-      const token = localStorage.getItem("bearer_token");
-      const headers = {
-        "Content-Type": "application/json",
-        ...(token && { Authorization: `Bearer ${token}` })
+      // Example model configuration
+      const config = {
+        name: 'Trading Strategy Model',
+        type: 'classification',
+        algorithm: 'xgboost',
+        features: ['sma_20', 'rsi_14', 'macd', 'volume_ratio', 'atr_14'],
+        target: 'price_direction',
+        hyperparameters: {
+          n_estimators: 100,
+          max_depth: 6,
+          learning_rate: 0.1
+        },
+        trainingDataSize: 10000,
+        validationSplit: 0.2,
+        testSplit: 0.1
       };
 
-      // Create model
-      const modelRes = await fetch("/api/ml-models", {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          name: trainingForm.name,
-          modelType: trainingForm.modelType,
-          version: trainingForm.version,
-          strategyId: trainingForm.strategyId ? parseInt(trainingForm.strategyId) : null,
-          status: "training",
-          hyperparameters: {
-            max_depth: trainingForm.maxDepth,
-            learning_rate: trainingForm.learningRate,
-            n_estimators: trainingForm.nEstimators,
-          }
-        })
+      // Example training data (in real app, this would come from feature engineering)
+      const data = {
+        features: Array.from({ length: 1000 }, () => ({
+          sma_20: Math.random() * 100,
+          rsi_14: Math.random() * 100,
+          macd: (Math.random() - 0.5) * 2,
+          volume_ratio: Math.random() * 2,
+          atr_14: Math.random() * 5
+        })),
+        targets: Array.from({ length: 1000 }, () => Math.random() > 0.5 ? 1 : 0),
+        timestamps: Array.from({ length: 1000 }, (_, i) => Date.now() - i * 86400000),
+        symbols: Array.from({ length: 1000 }, () => 'AAPL')
+      };
+
+      const response = await fetch('/api/ml/models', {
+        method: 'POST',
+        headers: {
+          'Content-Type': 'application/json',
+        },
+        body: JSON.stringify({ config, data }),
       });
 
-      if (!modelRes.ok) {
-        throw new Error("Failed to create model");
+      if (response.ok) {
+        const result = await response.json();
+        toast.success('Model training started');
+        setModels(prev => [...prev, result.model]);
+        
+        // Simulate training progress
+        simulateTrainingProgress(result.model.id);
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'Failed to start training');
       }
-
-      const newModel = await modelRes.json();
-
-      // Start training run
-      const trainingRes = await fetch(`/api/ml-models/${newModel.id}/train`, {
-        method: "POST",
-        headers,
-        body: JSON.stringify({
-          datasetStartDate: trainingForm.datasetStartDate,
-          datasetEndDate: trainingForm.datasetEndDate,
-          trainingSamples: trainingForm.trainingSamples,
-          validationSamples: trainingForm.validationSamples,
-        })
-      });
-
-      if (!trainingRes.ok) {
-        throw new Error("Failed to start training");
-      }
-
-      toast.success("Model training started successfully!");
-      setTrainingDialogOpen(false);
-      loadData();
-
-      // Reset form
-      setTrainingForm({
-        ...trainingForm,
-        name: "",
-      });
     } catch (error) {
-      console.error("Error training model:", error);
-      toast.error("Failed to start model training");
-    } finally {
-      setIsTraining(false);
+      console.error('Error training model:', error);
+      toast.error('Error training model');
     }
   };
 
-  const getModelTypeLabel = (type: string) => {
-    const types: Record<string, string> = {
-      xgboost: "XGBoost Classifier",
-      lightgbm: "LightGBM Classifier",
-      har_rv: "HAR-RV Volatility",
-      lstm: "LSTM Neural Network",
-      ensemble: "Ensemble Model"
-    };
-    return types[type] || type;
+  const simulateTrainingProgress = (modelId: string) => {
+    let progress = 0;
+    const interval = setInterval(() => {
+      progress += Math.random() * 10;
+      if (progress >= 100) {
+        progress = 100;
+        clearInterval(interval);
+        // Update model status to ready
+        setModels(prev => prev.map(model => 
+          model.id === modelId ? { ...model, status: 'ready' } : model
+        ));
+        delete trainingProgress[modelId];
+        toast.success('Model training completed');
+      }
+      setTrainingProgress(prev => ({ ...prev, [modelId]: progress }));
+    }, 1000);
+  };
+
+  const deleteModel = async (modelId: string) => {
+    try {
+      const response = await fetch(`/api/ml/models/${modelId}`, {
+        method: 'DELETE',
+      });
+
+      if (response.ok) {
+        setModels(prev => prev.filter(model => model.id !== modelId));
+        toast.success('Model deleted');
+      } else {
+        toast.error('Failed to delete model');
+      }
+    } catch (error) {
+      console.error('Error deleting model:', error);
+      toast.error('Error deleting model');
+    }
+  };
+
+  const getStatusIcon = (status: string) => {
+    switch (status) {
+      case 'ready':
+        return <CheckCircle className="h-4 w-4 text-green-500" />;
+      case 'training':
+        return <Activity className="h-4 w-4 text-blue-500 animate-pulse" />;
+      case 'failed':
+        return <XCircle className="h-4 w-4 text-red-500" />;
+      case 'deprecated':
+        return <AlertCircle className="h-4 w-4 text-yellow-500" />;
+      default:
+        return <Clock className="h-4 w-4 text-gray-500" />;
+    }
   };
 
   const getStatusColor = (status: string) => {
-    const colors: Record<string, string> = {
-      active: "bg-green-500",
-      training: "bg-yellow-500 animate-pulse",
-      archived: "bg-gray-500",
-      failed: "bg-red-500"
-    };
-    return colors[status] || "bg-gray-500";
+    switch (status) {
+      case 'ready':
+        return 'bg-green-500/10 text-green-700 border-green-500/30';
+      case 'training':
+        return 'bg-blue-500/10 text-blue-700 border-blue-500/30';
+      case 'failed':
+        return 'bg-red-500/10 text-red-700 border-red-500/30';
+      case 'deprecated':
+        return 'bg-yellow-500/10 text-yellow-700 border-yellow-500/30';
+      default:
+        return 'bg-gray-500/10 text-gray-700 border-gray-500/30';
+    }
   };
 
-  const getStatusBadge = (status: string) => {
-    const variants: Record<string, "default" | "secondary" | "destructive"> = {
-      active: "default",
-      training: "secondary",
-      archived: "secondary",
-      failed: "destructive"
-    };
-    return variants[status] || "secondary";
+  const formatMetric = (value: number | undefined, type: 'percentage' | 'number' | 'currency' = 'number') => {
+    if (value === undefined) return 'N/A';
+    
+    switch (type) {
+      case 'percentage':
+        return `${(value * 100).toFixed(1)}%`;
+      case 'currency':
+        return `$${value.toFixed(2)}`;
+      default:
+        return value.toFixed(3);
+    }
   };
 
   if (isLoading) {
     return (
       <div className="flex h-screen bg-background items-center justify-center">
         <div className="text-center">
-          <Loader2 className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
-          <p className="text-muted-foreground text-lg">Loading ML models...</p>
+          <Activity className="h-12 w-12 animate-spin mx-auto mb-4 text-primary" />
+          <p className="text-muted-foreground text-lg">Loading models...</p>
         </div>
       </div>
     );
   }
 
   return (
-    <div className="min-h-screen bg-background">
-      <header className="border-b border-border bg-card/95 backdrop-blur-sm sticky top-0 z-50 shadow-sm">
-        <div className="container mx-auto px-4 lg:px-6 py-3">
-          <div className="flex items-center justify-between gap-4">
-            <div className="flex items-center gap-6 lg:gap-10">
-              <Link href="/" className="flex items-center gap-2 hover:opacity-80 transition-all duration-200 group">
-                <div className="p-1.5 rounded-lg bg-primary/10 group-hover:bg-primary/20 transition-colors">
-                  <TrendingUp className="h-5 w-5 text-primary" />
-                </div>
-                <h1 className="text-base font-bold bg-gradient-to-r from-foreground to-foreground/70 bg-clip-text">Trading Buddy</h1>
-              </Link>
-              
-              <nav className="hidden lg:flex items-center gap-1">
-                <Link href="/dashboard">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <BarChart3 className="h-4 w-4 mr-1.5" />
-                    Dashboard
-                  </Button>
-                </Link>
-                
-                <Link href="/strategies">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Zap className="h-4 w-4 mr-1.5" />
-                    Strategies
-                  </Button>
-                </Link>
-                <Link href="/risk">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Shield className="h-4 w-4 mr-1.5" />
-                    Risk
-                  </Button>
-                </Link>
-                <Link href="/data">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Database className="h-4 w-4 mr-1.5" />
-                    Data
-                  </Button>
-                </Link>
-                <Link href="/backtest">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <TestTube className="h-4 w-4 mr-1.5" />
-                    Backtest
-                  </Button>
-                </Link>
-                <Link href="/models">
-                  <Button variant="secondary" size="sm" className="font-medium shadow-sm">
-                    <Brain className="h-4 w-4 mr-1.5" />
-                    Models
-                  </Button>
-                </Link>
-                <Link href="/news">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Newspaper className="h-4 w-4 mr-1.5" />
-                    News
-                  </Button>
-                </Link>
-                <Link href="/settings">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <SettingsIcon className="h-4 w-4 mr-1.5" />
-                    Settings
-                  </Button>
-                </Link>
-              </nav>
-            </div>
-            
-            <div className="flex items-center gap-2 lg:gap-3">
-              <Sheet open={mobileMenuOpen} onOpenChange={setMobileMenuOpen}>
-                <SheetTrigger asChild>
-                  <Button variant="ghost" size="sm" className="lg:hidden">
-                    <Menu className="h-5 w-5" />
-                  </Button>
-                </SheetTrigger>
-                <SheetContent side="left" className="w-[280px]">
-                  <SheetHeader>
-                    <SheetTitle>Navigation</SheetTitle>
-                  </SheetHeader>
-                  <div className="flex flex-col gap-2 mt-6">
-                    <Link href="/dashboard" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <BarChart3 className="h-4 w-4 mr-2" />
-                        Dashboard
-                      </Button>
-                    </Link>
-                    <Link href="/strategies" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <Zap className="h-4 w-4 mr-2" />
-                        Strategies
-                      </Button>
-                    </Link>
-                    <Link href="/risk" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <Shield className="h-4 w-4 mr-2" />
-                        Risk
-                      </Button>
-                    </Link>
-                    <Link href="/data" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <Database className="h-4 w-4 mr-2" />
-                        Data
-                      </Button>
-                    </Link>
-                    <Link href="/backtest" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <TestTube className="h-4 w-4 mr-2" />
-                        Backtest
-                      </Button>
-                    </Link>
-                    <Link href="/models" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="secondary" size="sm" className="w-full justify-start font-medium">
-                        <Brain className="h-4 w-4 mr-2" />
-                        Models
-                      </Button>
-                    </Link>
-                    <Link href="/news" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <Newspaper className="h-4 w-4 mr-2" />
-                        News
-                      </Button>
-                    </Link>
-                    <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <SettingsIcon className="h-4 w-4 mr-2" />
-                        Settings
-                      </Button>
-                    </Link>
-                  </div>
-                </SheetContent>
-              </Sheet>
-
-              <div className="flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary/80 backdrop-blur-sm shadow-sm">
-                <WifiOff className="h-3.5 w-3.5 text-gray-400" />
-                <span className="text-xs text-muted-foreground hidden sm:inline">Offline</span>
-              </div>
-
-              <div className="hidden md:flex items-center gap-2 px-2.5 py-1.5 rounded-lg bg-secondary/80 backdrop-blur-sm shadow-sm">
-                <div className={`h-1.5 w-1.5 rounded-full ${isLiveUpdateEnabled ? 'bg-green-500 animate-pulse' : 'bg-gray-400'}`} />
-                <span className="text-xs text-muted-foreground">
-                  {lastUpdate.toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}
-                </span>
-                <Button
-                  size="sm"
-                  variant="ghost"
-                  onClick={() => setIsLiveUpdateEnabled(!isLiveUpdateEnabled)}
-                  className="h-6 px-2 text-xs hover:bg-background/50"
-                >
-                  {isLiveUpdateEnabled ? 'Pause' : 'Resume'}
-                </Button>
-              </div>
-              <ThemeToggle />
-            </div>
-          </div>
+    <div className="container mx-auto p-6 space-y-6">
+      <div className="flex items-center justify-between">
+        <div>
+          <h1 className="text-3xl font-bold">ML Models</h1>
+          <p className="text-muted-foreground">Train and manage machine learning models for trading strategies</p>
         </div>
-      </header>
-
-      <main className="container mx-auto px-4 lg:px-6 py-6 lg:py-8">
-        <div className="flex items-center justify-between mb-6">
-          <div>
-            <h2 className="text-2xl font-bold">ML Models</h2>
-            <p className="text-sm text-muted-foreground">Machine learning models for trading predictions</p>
-          </div>
-          <Button onClick={() => setTrainingDialogOpen(true)} className="gap-2">
-            <Play className="h-4 w-4" />
+        <div className="flex gap-2">
+          <Button onClick={trainNewModel} className="flex items-center gap-2">
+            <Brain className="h-4 w-4" />
             Train New Model
           </Button>
+          <Button variant="outline" className="flex items-center gap-2">
+            <Upload className="h-4 w-4" />
+            Import Model
+          </Button>
         </div>
+      </div>
 
-        {/* Active Models Grid */}
-        <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-6 mb-6">
-          {models.length > 0 ? (
-            models.map((model) => (
-              <Card key={model.id} className="relative">
-                <div className={`absolute top-3 right-3 h-2 w-2 rounded-full ${getStatusColor(model.status)}`} />
-                <CardHeader>
-                  <CardTitle className="text-sm pr-6">{model.name}</CardTitle>
-                  <CardDescription>{getModelTypeLabel(model.modelType)}</CardDescription>
-                </CardHeader>
-                <CardContent>
-                  <div className="space-y-2 mb-4">
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Version</span>
-                      <span className="font-medium">{model.version}</span>
-                    </div>
-                    <div className="flex justify-between text-sm">
-                      <span className="text-muted-foreground">Status</span>
-                      <Badge variant={getStatusBadge(model.status)} className="text-xs">
-                        {model.status}
-                      </Badge>
-                    </div>
-                    {model.description && (
-                      <div className="text-xs text-muted-foreground mt-2">
-                        {model.description}
+      <Tabs value={selectedTab} onValueChange={setSelectedTab} className="space-y-6">
+        <TabsList>
+          <TabsTrigger value="overview">Overview</TabsTrigger>
+          <TabsTrigger value="models">All Models</TabsTrigger>
+          <TabsTrigger value="training">Training</TabsTrigger>
+          <TabsTrigger value="performance">Performance</TabsTrigger>
+        </TabsList>
+
+        <TabsContent value="overview" className="space-y-6">
+          <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Total Models</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">{models.length}</div>
+                <p className="text-xs text-muted-foreground">
+                  {models.filter(m => m.status === 'ready').length} active
+                </p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Training</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {models.filter(m => m.status === 'training').length}
+                </div>
+                <p className="text-xs text-muted-foreground">In progress</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Avg Accuracy</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {models.length > 0 
+                    ? formatMetric(
+                        models
+                          .filter(m => m.metrics.accuracy !== undefined)
+                          .reduce((sum, m) => sum + (m.metrics.accuracy || 0), 0) / 
+                        models.filter(m => m.metrics.accuracy !== undefined).length,
+                        'percentage'
+                      )
+                    : 'N/A'
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">Across all models</p>
+              </CardContent>
+            </Card>
+
+            <Card>
+              <CardHeader className="pb-2">
+                <CardTitle className="text-sm font-medium">Best Sharpe</CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="text-2xl font-bold">
+                  {models.length > 0 
+                    ? formatMetric(
+                        Math.max(...models.map(m => m.metrics.sharpeRatio || 0)),
+                        'number'
+                      )
+                    : 'N/A'
+                  }
+                </div>
+                <p className="text-xs text-muted-foreground">Risk-adjusted return</p>
+              </CardContent>
+            </Card>
+          </div>
+
+          {models.length > 0 && (
+            <Card>
+              <CardHeader>
+                <CardTitle>Recent Models</CardTitle>
+                <CardDescription>Latest trained models and their performance</CardDescription>
+              </CardHeader>
+              <CardContent>
+                <div className="space-y-4">
+                  {models.slice(0, 3).map((model) => (
+                    <div key={model.id} className="flex items-center justify-between p-4 border rounded-lg">
+                      <div className="flex items-center gap-3">
+                        {getStatusIcon(model.status)}
+                        <div>
+                          <h3 className="font-medium">{model.name}</h3>
+                          <p className="text-sm text-muted-foreground">
+                            {model.algorithm.toUpperCase()} • {model.type}
+                          </p>
+                        </div>
                       </div>
-                    )}
-                  </div>
-                  <div className="flex gap-2">
-                    <Button size="sm" variant="outline" className="flex-1">
-                      <Download className="h-3 w-3 mr-1" />
-                      Export
-                    </Button>
-                    <Button size="sm" variant="outline" className="flex-1" onClick={() => handleShowDetails(model)}>
-                      Details
-                    </Button>
-                  </div>
-                </CardContent>
-              </Card>
-            ))
-          ) : (
-            <Card className="col-span-full">
-              <CardContent className="py-12">
-                <div className="text-center text-muted-foreground">
-                  <Brain className="h-12 w-12 mx-auto mb-4 opacity-20" />
-                  <p>No ML models yet</p>
-                  <Button 
-                    onClick={() => setTrainingDialogOpen(true)} 
-                    variant="outline" 
-                    size="sm"
-                    className="mt-4"
-                  >
-                    <Play className="h-4 w-4 mr-2" />
-                    Train Your First Model
-                  </Button>
+                      <div className="flex items-center gap-4">
+                        <div className="text-right">
+                          <div className="text-sm font-medium">
+                            {formatMetric(model.metrics.accuracy, 'percentage')}
+                          </div>
+                          <div className="text-xs text-muted-foreground">Accuracy</div>
+                        </div>
+                        <Badge className={getStatusColor(model.status)}>
+                          {model.status}
+                        </Badge>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               </CardContent>
             </Card>
           )}
-        </div>
+        </TabsContent>
 
-        {/* Training Dialog */}
-        <Dialog open={trainingDialogOpen} onOpenChange={setTrainingDialogOpen}>
-          <DialogContent className="max-w-2xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Train New ML Model</DialogTitle>
-              <DialogDescription>
-                Configure and train a new machine learning model for trading predictions
-              </DialogDescription>
-            </DialogHeader>
-
-            <div className="space-y-4">
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="model-name">Model Name *</Label>
-                  <Input
-                    id="model-name"
-                    placeholder="IV Predictor v1.0"
-                    value={trainingForm.name}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, name: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="model-type">Model Type *</Label>
-                  <select
-                    id="model-type"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                    value={trainingForm.modelType}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, modelType: e.target.value })}
-                  >
-                    <option value="xgboost">XGBoost Classifier</option>
-                    <option value="lightgbm">LightGBM Classifier</option>
-                    <option value="har_rv">HAR-RV Volatility</option>
-                    <option value="lstm">LSTM Neural Network</option>
-                    <option value="ensemble">Ensemble Model</option>
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="version">Version</Label>
-                  <Input
-                    id="version"
-                    value={trainingForm.version}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, version: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="strategy">Strategy (Optional)</Label>
-                  <select
-                    id="strategy"
-                    className="w-full px-3 py-2 border border-input rounded-md bg-background"
-                    value={trainingForm.strategyId}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, strategyId: e.target.value })}
-                  >
-                    <option value="">No Strategy</option>
-                    {strategies.map((s) => (
-                      <option key={s.id} value={s.id}>
-                        {s.name}
-                      </option>
-                    ))}
-                  </select>
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="start-date">Dataset Start Date</Label>
-                  <Input
-                    id="start-date"
-                    type="date"
-                    value={trainingForm.datasetStartDate}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, datasetStartDate: e.target.value })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="end-date">Dataset End Date</Label>
-                  <Input
-                    id="end-date"
-                    type="date"
-                    value={trainingForm.datasetEndDate}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, datasetEndDate: e.target.value })}
-                  />
-                </div>
-              </div>
-
-              <div className="grid grid-cols-2 gap-4">
-                <div>
-                  <Label htmlFor="training-samples">Training Samples</Label>
-                  <Input
-                    id="training-samples"
-                    type="number"
-                    value={trainingForm.trainingSamples}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, trainingSamples: parseInt(e.target.value) })}
-                  />
-                </div>
-                <div>
-                  <Label htmlFor="validation-samples">Validation Samples</Label>
-                  <Input
-                    id="validation-samples"
-                    type="number"
-                    value={trainingForm.validationSamples}
-                    onChange={(e) => setTrainingForm({ ...trainingForm, validationSamples: parseInt(e.target.value) })}
-                  />
-                </div>
-              </div>
-
-              <div className="border-t pt-4">
-                <h4 className="text-sm font-semibold mb-3">Hyperparameters</h4>
-                <div className="grid grid-cols-3 gap-4">
-                  <div>
-                    <Label htmlFor="max-depth">Max Depth</Label>
-                    <Input
-                      id="max-depth"
-                      type="number"
-                      value={trainingForm.maxDepth}
-                      onChange={(e) => setTrainingForm({ ...trainingForm, maxDepth: parseInt(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="learning-rate">Learning Rate</Label>
-                    <Input
-                      id="learning-rate"
-                      type="number"
-                      step="0.01"
-                      value={trainingForm.learningRate}
-                      onChange={(e) => setTrainingForm({ ...trainingForm, learningRate: parseFloat(e.target.value) })}
-                    />
-                  </div>
-                  <div>
-                    <Label htmlFor="n-estimators">N Estimators</Label>
-                    <Input
-                      id="n-estimators"
-                      type="number"
-                      value={trainingForm.nEstimators}
-                      onChange={(e) => setTrainingForm({ ...trainingForm, nEstimators: parseInt(e.target.value) })}
-                    />
-                  </div>
-                </div>
-              </div>
-            </div>
-
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setTrainingDialogOpen(false)}>
-                Cancel
-              </Button>
-              <Button onClick={handleTrainModel} disabled={isTraining}>
-                {isTraining ? (
-                  <>
-                    <Loader2 className="h-4 w-4 mr-2 animate-spin" />
-                    Starting Training...
-                  </>
-                ) : (
-                  <>
-                    <Play className="h-4 w-4 mr-2" />
-                    Start Training
-                  </>
-                )}
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-
-        {/* Model Details Dialog */}
-        <Dialog open={detailsDialogOpen} onOpenChange={setDetailsDialogOpen}>
-          <DialogContent className="max-w-3xl max-h-[90vh] overflow-y-auto">
-            <DialogHeader>
-              <DialogTitle>Model Details</DialogTitle>
-              <DialogDescription>
-                View model configuration, hyperparameters, and training history
-              </DialogDescription>
-            </DialogHeader>
-
-            {selectedModel && (
-              <div className="space-y-6">
-                {/* Model Info */}
-                <div className="grid grid-cols-2 gap-4 p-4 bg-secondary/30 rounded-lg">
-                  <div>
-                    <p className="text-sm text-muted-foreground">Model Name</p>
-                    <p className="font-medium">{selectedModel.name}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Model Type</p>
-                    <p className="font-medium">{getModelTypeLabel(selectedModel.modelType)}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Version</p>
-                    <p className="font-medium">{selectedModel.version}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Status</p>
-                    <Badge variant={getStatusBadge(selectedModel.status)}>
-                      {selectedModel.status}
-                    </Badge>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Created</p>
-                    <p className="text-sm">{new Date(selectedModel.createdAt).toLocaleString()}</p>
-                  </div>
-                  <div>
-                    <p className="text-sm text-muted-foreground">Last Updated</p>
-                    <p className="text-sm">{new Date(selectedModel.updatedAt).toLocaleString()}</p>
-                  </div>
-                </div>
-
-                {/* Hyperparameters */}
-                {selectedModel.hyperparameters && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3">Hyperparameters</h4>
-                    <div className="grid grid-cols-3 gap-4 p-4 bg-secondary/30 rounded-lg">
-                      {Object.entries(selectedModel.hyperparameters).map(([key, value]) => (
-                        <div key={key}>
-                          <p className="text-sm text-muted-foreground capitalize">{key.replace(/_/g, ' ')}</p>
-                          <p className="font-medium">{String(value)}</p>
+        <TabsContent value="models" className="space-y-6">
+          {models.length === 0 ? (
+            <EmptyState
+              icon={Brain}
+              title="No Models"
+              description="Train your first machine learning model to get started"
+              buttonText="Train New Model"
+              onButtonClick={trainNewModel}
+            />
+          ) : (
+            <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
+              {models.map((model) => (
+                <Card key={model.id}>
+                  <CardHeader>
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        {getStatusIcon(model.status)}
+                        <CardTitle className="text-lg">{model.name}</CardTitle>
+                      </div>
+                      <div className="flex gap-2">
+                        <Button size="sm" variant="outline">
+                          <Settings className="h-4 w-4" />
+                        </Button>
+                        <Button size="sm" variant="outline" onClick={() => deleteModel(model.id)}>
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      </div>
+                    </div>
+                    <CardDescription>
+                      {model.algorithm.toUpperCase()} • {model.type} • v{model.version}
+                    </CardDescription>
+                  </CardHeader>
+                  <CardContent className="space-y-4">
+                    {model.status === 'training' && trainingProgress[model.id] !== undefined && (
+                      <div className="space-y-2">
+                        <div className="flex justify-between text-sm">
+                          <span>Training Progress</span>
+                          <span>{Math.round(trainingProgress[model.id])}%</span>
                         </div>
-                      ))}
-                    </div>
-                  </div>
-                )}
+                        <Progress value={trainingProgress[model.id]} className="h-2" />
+                      </div>
+                    )}
 
-                {/* Feature Importance */}
-                {selectedModel.featureImportance && (
-                  <div>
-                    <h4 className="text-sm font-semibold mb-3">Top Features</h4>
-                    <div className="space-y-2">
-                      {Object.entries(selectedModel.featureImportance)
-                        .sort(([, a], [, b]) => (b as number) - (a as number))
-                        .slice(0, 5)
-                        .map(([feature, importance]) => (
-                          <div key={feature} className="space-y-1">
-                            <div className="flex justify-between text-sm">
-                              <span className="text-muted-foreground">{feature}</span>
-                              <span className="font-medium">{((importance as number) * 100).toFixed(1)}%</span>
-                            </div>
-                            <Progress value={(importance as number) * 100} className="h-2" />
+                    <div className="grid grid-cols-2 gap-4 text-sm">
+                      <div>
+                        <div className="text-muted-foreground">Accuracy</div>
+                        <div className="font-medium">
+                          {formatMetric(model.metrics.accuracy, 'percentage')}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Sharpe Ratio</div>
+                        <div className="font-medium">
+                          {formatMetric(model.metrics.sharpeRatio, 'number')}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Win Rate</div>
+                        <div className="font-medium">
+                          {formatMetric(model.metrics.winRate, 'percentage')}
+                        </div>
+                      </div>
+                      <div>
+                        <div className="text-muted-foreground">Max Drawdown</div>
+                        <div className="font-medium">
+                          {formatMetric(model.metrics.maxDrawdown, 'percentage')}
+                        </div>
+                      </div>
+                    </div>
+
+                    <div className="pt-2 border-t">
+                      <div className="flex justify-between text-xs text-muted-foreground">
+                        <span>Training Data: {model.trainingDataSize.toLocaleString()} samples</span>
+                        <span>{new Date(model.trainedAt).toLocaleDateString()}</span>
+                      </div>
+                    </div>
+                  </CardContent>
+                </Card>
+              ))}
+            </div>
+          )}
+        </TabsContent>
+
+        <TabsContent value="training" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Training Queue</CardTitle>
+              <CardDescription>Models currently being trained</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {models.filter(m => m.status === 'training').length === 0 ? (
+                <EmptyState
+                  icon={Activity}
+                  title="No Active Training"
+                  description="No models are currently being trained"
+                  buttonText="Start Training"
+                  onButtonClick={trainNewModel}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {models
+                    .filter(m => m.status === 'training')
+                    .map((model) => (
+                      <div key={model.id} className="flex items-center justify-between p-4 border rounded-lg">
+                        <div className="flex items-center gap-3">
+                          <Activity className="h-4 w-4 text-blue-500 animate-pulse" />
+                          <div>
+                            <h3 className="font-medium">{model.name}</h3>
+                            <p className="text-sm text-muted-foreground">
+                              {model.algorithm.toUpperCase()} • {model.type}
+                            </p>
                           </div>
-                        ))}
-                    </div>
-                  </div>
-                )}
-
-                {/* Training Runs */}
-                <div>
-                  <h4 className="text-sm font-semibold mb-3">Training History</h4>
-                  {loadingDetails ? (
-                    <div className="flex justify-center py-8">
-                      <Loader2 className="h-6 w-6 animate-spin text-muted-foreground" />
-                    </div>
-                  ) : trainingRuns.length > 0 ? (
-                    <div className="space-y-3">
-                      {trainingRuns.map((run) => (
-                        <Card key={run.id}>
-                          <CardContent className="p-4">
-                            <div className="grid grid-cols-2 gap-4 text-sm">
-                              <div>
-                                <p className="text-muted-foreground">Dataset Period</p>
-                                <p className="font-medium">
-                                  {new Date(run.datasetStartDate).toLocaleDateString()} - {new Date(run.datasetEndDate).toLocaleDateString()}
-                                </p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Status</p>
-                                <Badge variant={run.status === 'completed' ? 'default' : run.status === 'failed' ? 'destructive' : 'secondary'}>
-                                  {run.status}
-                                </Badge>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Training Samples</p>
-                                <p className="font-medium">{run.trainingSamples.toLocaleString()}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Validation Samples</p>
-                                <p className="font-medium">{run.validationSamples.toLocaleString()}</p>
-                              </div>
-                              <div>
-                                <p className="text-muted-foreground">Duration</p>
-                                <p className="font-medium">{run.trainingDurationSeconds}s</p>
-                              </div>
-                              {run.overfittingScore && (
-                                <div>
-                                  <p className="text-muted-foreground">Overfitting Score</p>
-                                  <p className="font-medium">{run.overfittingScore.toFixed(3)}</p>
-                                </div>
-                              )}
-                              {run.trainingMetrics && (
-                                <div className="col-span-2">
-                                  <p className="text-muted-foreground mb-1">Training Metrics</p>
-                                  <div className="flex gap-4 text-xs">
-                                    {Object.entries(run.trainingMetrics).map(([key, value]) => (
-                                      <span key={key}>
-                                        <span className="text-muted-foreground">{key}:</span> <span className="font-medium">{typeof value === 'number' ? value.toFixed(4) : String(value)}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {run.validationMetrics && (
-                                <div className="col-span-2">
-                                  <p className="text-muted-foreground mb-1">Validation Metrics</p>
-                                  <div className="flex gap-4 text-xs">
-                                    {Object.entries(run.validationMetrics).map(([key, value]) => (
-                                      <span key={key}>
-                                        <span className="text-muted-foreground">{key}:</span> <span className="font-medium">{typeof value === 'number' ? value.toFixed(4) : String(value)}</span>
-                                      </span>
-                                    ))}
-                                  </div>
-                                </div>
-                              )}
-                              {run.errorMessage && (
-                                <div className="col-span-2">
-                                  <p className="text-sm text-destructive">{run.errorMessage}</p>
-                                </div>
-                              )}
-                            </div>
-                          </CardContent>
-                        </Card>
-                      ))}
-                    </div>
-                  ) : (
-                    <p className="text-sm text-muted-foreground text-center py-8">No training runs yet</p>
-                  )}
+                        </div>
+                        <div className="flex items-center gap-4">
+                          <div className="w-32">
+                            <Progress value={trainingProgress[model.id] || 0} className="h-2" />
+                          </div>
+                          <span className="text-sm font-medium">
+                            {Math.round(trainingProgress[model.id] || 0)}%
+                          </span>
+                        </div>
+                      </div>
+                    ))}
                 </div>
-              </div>
-            )}
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
 
-            <DialogFooter>
-              <Button variant="outline" onClick={() => setDetailsDialogOpen(false)}>
-                Close
-              </Button>
-            </DialogFooter>
-          </DialogContent>
-        </Dialog>
-      </main>
+        <TabsContent value="performance" className="space-y-6">
+          <Card>
+            <CardHeader>
+              <CardTitle>Model Performance Comparison</CardTitle>
+              <CardDescription>Compare performance metrics across all models</CardDescription>
+            </CardHeader>
+            <CardContent>
+              {models.length === 0 ? (
+                <EmptyState
+                  icon={BarChart3}
+                  title="No Performance Data"
+                  description="Train some models to see performance metrics"
+                  buttonText="Train New Model"
+                  onButtonClick={trainNewModel}
+                />
+              ) : (
+                <div className="space-y-4">
+                  {models.map((model) => (
+                    <div key={model.id} className="p-4 border rounded-lg">
+                      <div className="flex items-center justify-between mb-4">
+                        <h3 className="font-medium">{model.name}</h3>
+                        <Badge className={getStatusColor(model.status)}>
+                          {model.status}
+                        </Badge>
+                      </div>
+                      <div className="grid grid-cols-2 md:grid-cols-4 gap-4 text-sm">
+                        <div>
+                          <div className="text-muted-foreground">Accuracy</div>
+                          <div className="font-medium text-lg">
+                            {formatMetric(model.metrics.accuracy, 'percentage')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Sharpe Ratio</div>
+                          <div className="font-medium text-lg">
+                            {formatMetric(model.metrics.sharpeRatio, 'number')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Win Rate</div>
+                          <div className="font-medium text-lg">
+                            {formatMetric(model.metrics.winRate, 'percentage')}
+                          </div>
+                        </div>
+                        <div>
+                          <div className="text-muted-foreground">Max Drawdown</div>
+                          <div className="font-medium text-lg">
+                            {formatMetric(model.metrics.maxDrawdown, 'percentage')}
+                          </div>
+                        </div>
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              )}
+            </CardContent>
+          </Card>
+        </TabsContent>
+      </Tabs>
     </div>
   );
 }
-
-// Force dynamic rendering to prevent static generation issues
-export const dynamic = 'force-dynamic';
-

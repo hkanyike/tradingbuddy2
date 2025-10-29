@@ -3,7 +3,7 @@ import { newsSentimentEngine } from '@/lib/ml/news-sentiment-engine';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 
-// GET /api/news/sentiment?symbol=AAPL - Get sentiment analysis for a symbol
+// GET /api/news/events?symbol=AAPL - Get upcoming events for a symbol
 export async function GET(request: NextRequest) {
   try {
     const session = await getServerSession(authOptions);
@@ -24,18 +24,11 @@ export async function GET(request: NextRequest) {
       );
     }
 
-    const sentiment = await newsSentimentEngine.getSentimentAnalysis(symbol);
+    const events = await newsSentimentEngine.getUpcomingEvents(symbol);
     
-    if (!sentiment) {
-      return NextResponse.json(
-        { error: 'No sentiment data available for symbol', code: 'NO_DATA' },
-        { status: 404 }
-      );
-    }
-
-    return NextResponse.json({ sentiment }, { status: 200 });
+    return NextResponse.json({ events }, { status: 200 });
   } catch (error) {
-    console.error('Error fetching news sentiment:', error);
+    console.error('Error fetching news events:', error);
     return NextResponse.json(
       { error: 'Internal server error', code: 'INTERNAL_ERROR' },
       { status: 500 }
