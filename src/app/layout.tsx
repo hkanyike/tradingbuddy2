@@ -42,3 +42,6 @@ export default function RootLayout({
     </html>
   );
 }
+
+// Force dynamic rendering for the entire app
+export const dynamic = 'force-dynamic';
