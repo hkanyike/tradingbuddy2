@@ -22,15 +22,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Create a fetch record
+    // Create a fetch record (use only fields guaranteed by deployed schema)
     const [fetchRecord] = await db
       .insert(marketDataFetches)
       .values({
-        fetchType: "options_chain",
-        symbols: symbol.toUpperCase(),
+        createdAt: new Date().toISOString(),
+        startedAt: new Date().toISOString(),
         status: "in_progress",
         recordsFetched: 0,
-        startedAt: new Date().toISOString(),
+        source: "alpaca",
+        endpoint: "options_chain",
       })
       .returning();
 
