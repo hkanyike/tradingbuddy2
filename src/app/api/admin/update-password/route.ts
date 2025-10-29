@@ -60,7 +60,7 @@ export async function POST(request: NextRequest) {
       const updated = await db.update(account)
         .set({
           password: hashedPassword,
-          updatedAt: currentTimestamp
+          updatedAt: currentTimestamp.toISOString()
         })
         .where(and(
           eq(account.userId, userId),
@@ -87,8 +87,8 @@ export async function POST(request: NextRequest) {
           accessTokenExpiresAt: null,
           refreshTokenExpiresAt: null,
           scope: null,
-          createdAt: currentTimestamp,
-          updatedAt: currentTimestamp
+          createdAt: currentTimestamp.toISOString(),
+          updatedAt: currentTimestamp.toISOString()
         })
         .returning();
 

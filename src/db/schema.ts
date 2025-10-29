@@ -365,6 +365,30 @@ export const account = sqliteTable("account", {
   updatedAt: text("updated_at").notNull(),
 });
 
+// Options quotes table (for caching options market data)
+export const optionsQuotes = sqliteTable("options_quotes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  symbol: text("symbol").notNull(),
+  optionSymbol: text("option_symbol").notNull(),
+  strikePrice: real("strike_price").notNull(),
+  expirationDate: text("expiration_date").notNull(),
+  optionType: text("option_type").notNull(), // 'call' | 'put'
+  bid: real("bid"),
+  ask: real("ask"),
+  lastPrice: real("last_price"),
+  volume: integer("volume"),
+  openInterest: integer("open_interest"),
+  impliedVolatility: real("implied_volatility"),
+  delta: real("delta"),
+  gamma: real("gamma"),
+  theta: real("theta"),
+  vega: real("vega"),
+  rho: real("rho"),
+  underlyingPrice: real("underlying_price"),
+  timestamp: text("timestamp").notNull(),
+  createdAt: text("created_at").notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(user);
 export const selectUserSchema = createSelectSchema(user);
