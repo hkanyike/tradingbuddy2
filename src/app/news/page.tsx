@@ -21,7 +21,8 @@ import { EarningsCalendar } from "@/components/dashboard/earnings-calendar";
 import { EconomicEvents } from "@/components/dashboard/economic-events";
 
 export default function NewsPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [selectedTab, setSelectedTab] = useState("market-news");
@@ -293,13 +294,13 @@ export default function NewsPage() {
 
             <TabsContent value="market-news" className="space-y-6">
               <div className="grid grid-cols-1 gap-6">
-                <NewsFeed symbols={watchlistSymbols} />
+                <NewsFeed symbol={watchlistSymbols.join(',')} />
               </div>
             </TabsContent>
 
             <TabsContent value="sentiment" className="space-y-6">
               <div className="grid grid-cols-1 gap-6">
-                <SentimentIndicator symbols={watchlistSymbols} />
+                <SentimentIndicator symbol={watchlistSymbols.join(',')} />
               </div>
             </TabsContent>
 

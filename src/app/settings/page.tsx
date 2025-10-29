@@ -25,7 +25,8 @@ interface BrokerConnection {
 }
 
 export default function SettingsPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
   const [brokerConnections, setBrokerConnections] = useState<BrokerConnection[]>([]);
   const [isLoading, setIsLoading] = useState(true);

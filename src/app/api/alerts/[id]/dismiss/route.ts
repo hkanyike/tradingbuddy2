@@ -4,7 +4,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function POST(
   _request: NextRequest,
-  context: { params: { id: string } } // <- Next 15 expects Promise here
+  context: { params: Promise<{ id: string }> }
 ) {
   // Await the params object to satisfy the generated type
   const { id } = await context.params;
@@ -14,7 +14,7 @@ export async function POST(
     return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
   }
 
-  // TODO: mark alert `id` as dismissed for session.user.id
+  // TODO: mark alert `id` as dismissed for session.id
   // await db.update(...)
 
   return NextResponse.json({ ok: true, id }, { status: 200 });

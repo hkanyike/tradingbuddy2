@@ -6,7 +6,7 @@ import { getCurrentUser } from '@/lib/auth';
 
 export async function GET(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -49,28 +49,29 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'createdAt';
     const order = searchParams.get('order') || 'desc';
 
-    let query = db.select().from(strategies).where(eq(strategies.userId, user.id));
-
-    // Apply search filter
-    if (search) {
-      query = query.where(
-        and(
-          eq(strategies.userId, user.id),
-          or(
-            like(strategies.name, `%${search}%`),
-            like(strategies.strategyType, `%${search}%`),
-            like(strategies.description, `%${search}%`)
-          )
-        )
-      );
-    }
-
-    // Apply sorting
+    // Apply search filter and sorting
     const sortColumn = sort === 'name' ? strategies.name : strategies.createdAt;
-    query = order === 'asc' ? query.orderBy(sortColumn) : query.orderBy(desc(sortColumn));
-
-    // Apply pagination
-    const results = await query.limit(limit).offset(offset);
+    
+    const results = search
+      ? await db.select().from(strategies)
+          .where(
+            and(
+              eq(strategies.userId, user.id),
+              or(
+                like(strategies.name, `%${search}%`),
+                like(strategies.strategyType, `%${search}%`),
+                like(strategies.description, `%${search}%`)
+              )
+            )
+          )
+          .orderBy(order === 'asc' ? sortColumn : desc(sortColumn))
+          .limit(limit)
+          .offset(offset)
+      : await db.select().from(strategies)
+          .where(eq(strategies.userId, user.id))
+          .orderBy(order === 'asc' ? sortColumn : desc(sortColumn))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {
@@ -84,7 +85,7 @@ export async function GET(request: NextRequest) {
 
 export async function POST(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -139,7 +140,7 @@ export async function POST(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -223,7 +224,7 @@ export async function PUT(request: NextRequest) {
 
 export async function DELETE(request: NextRequest) {
   try {
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }

@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { paperOrders, paperTradingAccounts, paperPositions, assets } from '@/db/schema';
-import { eq } from 'drizzle-orm';
+import { eq, and } from 'drizzle-orm';
 
 interface SpreadLeg {
   assetId: number;
@@ -155,8 +155,12 @@ export async function POST(request: NextRequest) {
       // Update or create position for this leg
       const existingPosition = await db.select()
         .from(paperPositions)
-        .where(eq(paperPositions.paperAccountId, accountId))
-        .where(eq(paperPositions.assetId, assetId))
+        .where(
+          and(
+            eq(paperPositions.paperAccountId, accountId),
+            eq(paperPositions.assetId, assetId)
+          )
+        )
         .limit(1);
 
       if (existingPosition.length > 0) {

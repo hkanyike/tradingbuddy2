@@ -1,16 +1,15 @@
-﻿import type { RouteCtx } from '@/types/route-context'
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { watchlistRecommendations } from '@/db/schema';
 import { eq } from 'drizzle-orm';
 
 export async function POST(
   request: NextRequest,
-  { params }: RouteCtx<{ id: string }>
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Validate ID parameter
-    const id = params.id;
+    const { id } = await params;
     if (!id || isNaN(parseInt(id))) {
       return NextResponse.json(
         { 
@@ -44,7 +43,7 @@ export async function POST(
     const updatedRecommendation = await db
       .update(watchlistRecommendations)
       .set({
-        dismissed: 1
+        dismissed: true
       })
       .where(eq(watchlistRecommendations.id, recommendationId))
       .returning();

@@ -44,7 +44,8 @@ interface RiskMetric {
 }
 
 export default function RiskPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
 
   const [positions, setPositions] = useState<Position[]>([]);

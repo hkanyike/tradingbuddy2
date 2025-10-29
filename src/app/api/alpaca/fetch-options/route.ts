@@ -1,6 +1,7 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
 import { optionsQuotes, marketDataFetches } from "@/db/schema";
+import { eq } from "drizzle-orm";
 import { fetchOptionsChain, fetchUnderlyingQuote } from "@/lib/alpaca";
 
 /**
@@ -79,7 +80,7 @@ export async function POST(request: NextRequest) {
           recordsFetched: insertedQuotes.length,
           completedAt: new Date().toISOString(),
         })
-        .where({ id: fetchRecord.id });
+        .where(eq(marketDataFetches.id, fetchRecord.id));
 
       return NextResponse.json({
         success: true,
@@ -99,7 +100,7 @@ export async function POST(request: NextRequest) {
           errorMessage: error.message,
           completedAt: new Date().toISOString(),
         })
-        .where({ id: fetchRecord.id });
+        .where(eq(marketDataFetches.id, fetchRecord.id));
 
       throw error;
     }

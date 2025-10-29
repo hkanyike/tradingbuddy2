@@ -44,8 +44,6 @@ export async function GET(request: NextRequest) {
     const sort = searchParams.get('sort') || 'createdAt';
     const order = searchParams.get('order') || 'desc';
 
-    let query = db.select().from(marketSignals);
-
     // Build where conditions
     const conditions = [];
 
@@ -78,15 +76,17 @@ export async function GET(request: NextRequest) {
       }
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    // Apply sorting
-    const sortColumn = marketSignals[sort as keyof typeof marketSignals] || marketSignals.createdAt;
-    query = order === 'asc' ? query.orderBy(asc(sortColumn)) : query.orderBy(desc(sortColumn));
-
-    const results = await query.limit(limit).offset(offset);
+    // Build and execute query with conditions
+    const results = conditions.length > 0
+      ? await db.select().from(marketSignals)
+          .where(and(...conditions))
+          .orderBy(order === 'asc' ? asc(marketSignals.createdAt) : desc(marketSignals.createdAt))
+          .limit(limit)
+          .offset(offset)
+      : await db.select().from(marketSignals)
+          .orderBy(order === 'asc' ? asc(marketSignals.createdAt) : desc(marketSignals.createdAt))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
             quantity: newQuantity,
             currentPrice: mktPrice,
             unrealizedPnl: (mktPrice - pos.averageCost) * newQuantity,
-            realizedPnl: pos.realizedPnl + realizedPnl,
+            realizedPnl: (pos.realizedPnl || 0) + realizedPnl,
             lastUpdated: currentTimestamp,
           })
           .where(eq(paperPositions.id, pos.id))

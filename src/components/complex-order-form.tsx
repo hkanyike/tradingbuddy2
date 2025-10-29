@@ -48,7 +48,7 @@ export function ComplexOrderForm({ paperAccountId, onOrderPlaced }: ComplexOrder
       const qty = parseInt(quantity);
       const marketPrice = strike; // Mock market price
 
-      let legs = [];
+      let legs: any[] = [];
 
       switch (spreadType) {
         case "straddle":

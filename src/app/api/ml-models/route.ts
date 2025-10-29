@@ -83,14 +83,15 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(mlModels.modelType, modelType));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const results = await query
-      .orderBy(desc(mlModels.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const results = conditions.length > 0
+      ? await query.where(and(...conditions))
+          .orderBy(desc(mlModels.createdAt))
+          .limit(limit)
+          .offset(offset)
+      : await query
+          .orderBy(desc(mlModels.createdAt))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results);
   } catch (error) {

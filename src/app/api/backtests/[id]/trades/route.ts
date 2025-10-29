@@ -1,17 +1,13 @@
 ﻿import { NextRequest, NextResponse } from 'next/server'
-import type { RouteCtx } from '@/types/route-context'
 import { db } from '@/db'
 import { backtests, backtestTrades } from '@/db/schema'
 import { eq, and, desc } from 'drizzle-orm'
 import { getCurrentUser } from '@/lib/auth'
 
-// Type the WHOLE context, then destructure in the handler
-type RouteContext = RouteCtx<{ id: string }>
-
-export async function GET(request: NextRequest, { params }: RouteContext) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     // Auth
-    const user = await getCurrentUser(request)
+    const user = await getCurrentUser()
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 })
     }
@@ -77,11 +73,11 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
       }
     }
 
-    // Build WHERE incrementally (keeps TS happy)
-    let whereExpr = eq(backtestTrades.backtestId, parsedBacktestId)
-    if (tradeType) whereExpr = and(whereExpr, eq(backtestTrades.tradeType, tradeType))
-    if (side) whereExpr = and(whereExpr, eq(backtestTrades.side, side))
-    if (exitReason) whereExpr = and(whereExpr, eq(backtestTrades.exitReason, exitReason))
+    // Build WHERE conditions array
+    const conditions = [eq(backtestTrades.backtestId, parsedBacktestId)];
+    if (tradeType) conditions.push(eq(backtestTrades.tradeType, tradeType));
+    if (side) conditions.push(eq(backtestTrades.side, side));
+    if (exitReason) conditions.push(eq(backtestTrades.exitReason, exitReason));
 
     // Fetch trades
     const trades = await db
@@ -109,7 +105,7 @@ export async function GET(request: NextRequest, { params }: RouteContext) {
         greeksAtExit: backtestTrades.greeksAtExit,
       })
       .from(backtestTrades)
-      .where(whereExpr)
+      .where(and(...conditions))
       .orderBy(desc(backtestTrades.entryDate))
       .limit(limit)
       .offset(offset)

@@ -16,7 +16,7 @@ export default function SignInPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const registered = searchParams.get("registered") === "true";
-  const { refetch } = useSession();
+  const { } = useSession();
   
   const [isLoadingUser, setIsLoadingUser] = useState(false);
   const [isLoadingAdmin, setIsLoadingAdmin] = useState(false);
@@ -42,43 +42,30 @@ export default function SignInPage() {
 
     try {
       console.log("📡 [USER SIGN-IN] Calling authClient.signIn.email()...");
-      const { data, error } = await authClient.signIn.email({
+      const result = await authClient.signIn("credentials", {
         email: userFormData.email,
         password: userFormData.password,
-        rememberMe: userFormData.rememberMe,
+        redirect: false,
       });
 
       console.log("📥 [USER SIGN-IN] Sign-in response received");
-      console.log("✅ [USER SIGN-IN] Data:", data);
-      console.log("❌ [USER SIGN-IN] Error:", error);
+      console.log("✅ [USER SIGN-IN] Result:", result);
 
-      if (error?.code) {
-        console.error("🚫 [USER SIGN-IN] Sign-in error code:", error.code);
+      if (result?.error) {
+        console.error("🚫 [USER SIGN-IN] Sign-in error:", result.error);
         toast.error("Invalid email or password. Please make sure you have already registered an account and try again.");
         setIsLoadingUser(false);
         return;
       }
 
-      // Use the user data directly from sign-in response
-      if (data?.user) {
-        console.log("👤 [USER SIGN-IN] User found in response:", data.user);
-        
-        // Check if user is actually admin
-        if (data.user.isAdmin) {
-          console.warn("⚠️ [USER SIGN-IN] Admin detected in user sign-in - signing out");
-          toast.error("Admin accounts must use the Admin sign-in section.");
-          await authClient.signOut();
-          localStorage.removeItem("bearer_token");
-          setIsLoadingUser(false);
-          return;
-        }
-        
+      // Check if sign-in was successful
+      if (result?.ok) {
         console.log("✅ [USER SIGN-IN] Sign-in successful! Redirecting to /dashboard");
         toast.success("Welcome back!");
         router.push("/dashboard");
       } else {
-        console.error("❌ [USER SIGN-IN] No user data in sign-in response");
-        toast.error("Session error. Please try signing in again.");
+        console.error("❌ [USER SIGN-IN] Sign-in failed");
+        toast.error("Invalid email or password. Please try again.");
         setIsLoadingUser(false);
       }
     } catch (error) {
@@ -97,44 +84,30 @@ export default function SignInPage() {
 
     try {
       console.log("📡 [ADMIN SIGN-IN] Calling authClient.signIn.email()...");
-      const { data, error } = await authClient.signIn.email({
+      const result = await authClient.signIn("credentials", {
         email: adminFormData.email,
         password: adminFormData.password,
-        rememberMe: adminFormData.rememberMe,
+        redirect: false,
       });
 
       console.log("📥 [ADMIN SIGN-IN] Sign-in response received");
-      console.log("✅ [ADMIN SIGN-IN] Data:", data);
-      console.log("❌ [ADMIN SIGN-IN] Error:", error);
+      console.log("✅ [ADMIN SIGN-IN] Result:", result);
 
-      if (error?.code) {
-        console.error("🚫 [ADMIN SIGN-IN] Sign-in error code:", error.code);
+      if (result?.error) {
+        console.error("🚫 [ADMIN SIGN-IN] Sign-in error:", result.error);
         toast.error("Invalid admin credentials. Please check your email and password.");
         setIsLoadingAdmin(false);
         return;
       }
 
-      // Use the user data directly from sign-in response
-      if (data?.user) {
-        console.log("👤 [ADMIN SIGN-IN] User found in response:", data.user);
-        console.log("👑 [ADMIN SIGN-IN] Is Admin:", data.user.isAdmin);
-        
-        // Check if user is actually an admin
-        if (!data.user.isAdmin) {
-          console.warn("⚠️ [ADMIN SIGN-IN] Non-admin detected in admin sign-in - signing out");
-          toast.error("This account does not have admin privileges. Please use the User sign-in section.");
-          await authClient.signOut();
-          localStorage.removeItem("bearer_token");
-          setIsLoadingAdmin(false);
-          return;
-        }
-        
+      // Check if sign-in was successful
+      if (result?.ok) {
         console.log("✅ [ADMIN SIGN-IN] Admin sign-in successful! Redirecting to /dashboard");
         toast.success("Welcome back, Admin!");
         router.push("/dashboard");
       } else {
-        console.error("❌ [ADMIN SIGN-IN] No user data in sign-in response");
-        toast.error("Session error. Please try signing in again.");
+        console.error("❌ [ADMIN SIGN-IN] Sign-in failed");
+        toast.error("Invalid admin credentials. Please try again.");
         setIsLoadingAdmin(false);
       }
     } catch (error) {

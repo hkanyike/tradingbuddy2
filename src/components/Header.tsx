@@ -16,27 +16,18 @@ import {
 } from "@/components/ui/dropdown-menu";
 
 export const Header = () => {
-  const { data: session, isPending, refetch } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
 
   const handleSignOut = async () => {
-    const token = localStorage.getItem("bearer_token");
-    
-    const { error } = await authClient.signOut({
-      fetchOptions: {
-        headers: {
-          Authorization: `Bearer ${token}`,
-        },
-      },
-    });
-
-    if (error?.code) {
-      toast.error("Failed to sign out");
-    } else {
+    try {
+      await authClient.signOut();
       localStorage.removeItem("bearer_token");
-      refetch();
       toast.success("Signed out successfully");
       router.push("/");
+    } catch (error) {
+      toast.error("Failed to sign out");
     }
   };
 

@@ -1,15 +1,14 @@
-﻿import type { RouteCtx } from '@/types/route-context'
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { mlModels, mlPredictions, assets } from '@/db/schema';
 import { eq, and, desc } from 'drizzle-orm';
 
 export async function GET(
   request: NextRequest,
-  { params }: RouteCtx<{ id: string }>
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const modelId = params.id;
+    const { id: modelId } = await params;
     const searchParams = request.nextUrl.searchParams;
 
     // Validate model ID

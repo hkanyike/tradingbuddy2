@@ -1,7 +1,7 @@
 import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { marketDataFetches } from '@/db/schema';
-import { eq, desc } from 'drizzle-orm';
+import { eq, desc, and } from 'drizzle-orm';
 
 const VALID_STATUSES = ['pending', 'in_progress', 'success', 'failed'] as const;
 const VALID_FETCH_TYPES = ['scheduled', 'manual', 'earnings_event'] as const;
@@ -42,8 +42,9 @@ export async function GET(request: NextRequest) {
     const status = searchParams.get('status');
     const fetchType = searchParams.get('fetchType');
 
-    let query = db.select().from(marketDataFetches);
-
+    // Build conditions array
+    const conditions = [];
+    
     // Apply status filter
     if (status) {
       if (!VALID_STATUSES.includes(status as any)) {
@@ -55,7 +56,7 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      query = query.where(eq(marketDataFetches.status, status));
+      conditions.push(eq(marketDataFetches.status, status));
     }
 
     // Apply fetchType filter
@@ -69,14 +70,20 @@ export async function GET(request: NextRequest) {
           { status: 400 }
         );
       }
-      query = query.where(eq(marketDataFetches.fetchType, fetchType));
+      conditions.push(eq(marketDataFetches.fetchType, fetchType));
     }
 
-    // Order by startedAt DESC and apply pagination
-    const results = await query
-      .orderBy(desc(marketDataFetches.startedAt))
-      .limit(limit)
-      .offset(offset);
+    // Build and execute query
+    const results = conditions.length > 0
+      ? await db.select().from(marketDataFetches)
+          .where(and(...conditions))
+          .orderBy(desc(marketDataFetches.startedAt))
+          .limit(limit)
+          .offset(offset)
+      : await db.select().from(marketDataFetches)
+          .orderBy(desc(marketDataFetches.startedAt))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

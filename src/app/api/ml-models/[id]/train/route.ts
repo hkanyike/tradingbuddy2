@@ -1,5 +1,4 @@
-﻿import type { RouteCtx } from '@/types/route-context'
-import { NextRequest, NextResponse } from 'next/server';
+﻿import { NextRequest, NextResponse } from 'next/server';
 import { db } from '@/db';
 import { mlModels, mlTrainingRuns } from '@/db/schema';
 import { eq } from 'drizzle-orm';
@@ -7,11 +6,11 @@ import { getCurrentUser } from '@/lib/auth';
 
 export async function POST(
   request: NextRequest,
-  { params }: RouteCtx<{ id: string }>
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     // Authentication check
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required', code: 'AUTHENTICATION_REQUIRED' },
@@ -20,7 +19,7 @@ export async function POST(
     }
 
     // Extract and validate model ID from URL params
-    const modelId = params.id;
+    const { id: modelId } = await params;
     if (!modelId || isNaN(parseInt(modelId))) {
       return NextResponse.json(
         { error: 'Valid model ID is required', code: 'INVALID_MODEL_ID' },

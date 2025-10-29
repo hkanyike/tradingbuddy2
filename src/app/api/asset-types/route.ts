@@ -38,18 +38,27 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search');
 
-    let query = db.select().from(assetTypes);
-
+    let results;
+    
     if (search) {
-      query = query.where(
-        or(
-          like(assetTypes.typeName, `%${search}%`),
-          like(assetTypes.description, `%${search}%`)
+      results = await db
+        .select()
+        .from(assetTypes)
+        .where(
+          or(
+            like(assetTypes.typeName, `%${search}%`),
+            like(assetTypes.description, `%${search}%`)
+          )
         )
-      );
+        .limit(limit)
+        .offset(offset);
+    } else {
+      results = await db
+        .select()
+        .from(assetTypes)
+        .limit(limit)
+        .offset(offset);
     }
-
-    const results = await query.limit(limit).offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

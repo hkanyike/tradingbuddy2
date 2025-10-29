@@ -7,7 +7,7 @@ import { getCurrentUser } from "@/lib/auth";
 // GET single position
 export async function GET(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -21,7 +21,7 @@ export async function GET(
     .from(positions)
     .where(and(
       eq(positions.id, parseInt(id)),
-      eq(positions.userId, session.user.id)
+      eq(positions.userId, session.id)
     ))
     .limit(1);
 
@@ -35,7 +35,7 @@ export async function GET(
 // PUT (update) position
 export async function PUT(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -51,7 +51,7 @@ export async function PUT(
     .from(positions)
     .where(and(
       eq(positions.id, parseInt(id)),
-      eq(positions.userId, session.user.id)
+      eq(positions.userId, session.id)
     ))
     .limit(1);
 
@@ -74,7 +74,7 @@ export async function PUT(
 // DELETE position
 export async function DELETE(
   request: NextRequest,
-  context: { params: { id: string } }
+  context: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -89,7 +89,7 @@ export async function DELETE(
     .from(positions)
     .where(and(
       eq(positions.id, parseInt(id)),
-      eq(positions.userId, session.user.id)
+      eq(positions.userId, session.id)
     ))
     .limit(1);
 

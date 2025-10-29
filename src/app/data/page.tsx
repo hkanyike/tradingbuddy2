@@ -19,7 +19,8 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 
 export default function DataManagementPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
 
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);

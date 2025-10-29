@@ -74,7 +74,8 @@ interface MLModel {
 }
 
 export default function BacktestPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -130,7 +131,7 @@ export default function BacktestPage() {
   const loadData = async () => {
     try {
       const token = localStorage.getItem("bearer_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
 
       const [backtestsRes, strategiesRes, modelsRes] = await Promise.all([
         fetch("/api/backtests", { headers }),

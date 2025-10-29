@@ -42,23 +42,25 @@ export async function GET(request: NextRequest) {
     let query = db.select().from(paperPositions);
 
     // Filter by paperAccountId if provided
-    if (paperAccountId) {
-      const accountId = parseInt(paperAccountId);
-      if (isNaN(accountId)) {
-        return NextResponse.json(
-          { error: 'Valid paper account ID is required', code: 'INVALID_ACCOUNT_ID' },
-          { status: 400 }
-        );
-      }
-      query = query.where(eq(paperPositions.paperAccountId, accountId));
-    }
+    const results = paperAccountId
+      ? (() => {
+          const accountId = parseInt(paperAccountId);
+          if (isNaN(accountId)) {
+            throw new Error('Valid paper account ID is required');
+          }
+          return query.where(eq(paperPositions.paperAccountId, accountId))
+            .orderBy(desc(paperPositions.lastUpdated))
+            .limit(limit)
+            .offset(offset);
+        })()
+      : query
+          .orderBy(desc(paperPositions.lastUpdated))
+          .limit(limit)
+          .offset(offset);
 
-    const results = await query
-      .orderBy(desc(paperPositions.lastUpdated))
-      .limit(limit)
-      .offset(offset);
+    const finalResults = await results;
 
-    return NextResponse.json(results, { status: 200 });
+    return NextResponse.json(finalResults, { status: 200 });
   } catch (error) {
     console.error('GET error:', error);
     return NextResponse.json(

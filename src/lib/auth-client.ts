@@ -1,7 +1,9 @@
 // src/lib/auth-client.ts
 // Thin proxy so the app can keep importing "@/lib/auth-client"
 
-export { useSession, signIn, signOut, getSession } from "next-auth/react";
+import { useSession, signIn, signOut, getSession } from "next-auth/react";
+
+export { useSession, signIn, signOut, getSession };
 
 // Optional convenience object for legacy imports: { authClient }
 export const authClient = {

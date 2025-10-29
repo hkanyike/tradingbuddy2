@@ -107,14 +107,15 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(mlPredictions.predictionType, predictionType));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const results = await query
-      .orderBy(desc(mlPredictions.timestamp))
-      .limit(limit)
-      .offset(offset);
+    const results = conditions.length > 0
+      ? await query.where(and(...conditions))
+          .orderBy(desc(mlPredictions.timestamp))
+          .limit(limit)
+          .offset(offset)
+      : await query
+          .orderBy(desc(mlPredictions.timestamp))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

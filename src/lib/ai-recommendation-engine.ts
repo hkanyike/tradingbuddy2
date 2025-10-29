@@ -1238,7 +1238,7 @@ export class AIRecommendationEngine {
           modelPredictions: {
             winProbability: mlWinProb,
             expectedReturn: data.price * 0.03 * 100 * mlWinProb - data.price * 0.05 * 100 * (1 - mlWinProb),
-            volatilityForecast: volForecast?.forecastedVolatility || data.iv30d * 0.5,
+            volatilityForecast: (ivForecast as any)?.volatilityForecast || data.iv30d * 0.5,
             priceTarget: data.price,
             modelUsed: winProbPrediction ? `Model ${winProbPrediction.modelId}` : 'Rule-based',
             predictionConfidence: winProbPrediction?.confidenceScore,

@@ -12,7 +12,7 @@ export async function GET(
     const { userId } = await params;
 
     // Authenticate user
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json(
         { error: 'Authentication required', code: 'UNAUTHORIZED' },

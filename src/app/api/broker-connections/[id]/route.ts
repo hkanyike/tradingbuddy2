@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -28,7 +28,7 @@ export async function GET(
       .from(brokerConnections)
       .where(and(
         eq(brokerConnections.id, parseInt(id)),
-        eq(brokerConnections.userId, session.user.id)
+        eq(brokerConnections.userId, session.id)
       ))
       .limit(1);
 
@@ -51,7 +51,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -87,7 +87,7 @@ export async function PUT(
       .from(brokerConnections)
       .where(and(
         eq(brokerConnections.id, parseInt(id)),
-        eq(brokerConnections.userId, session.user.id)
+        eq(brokerConnections.userId, session.id)
       ))
       .limit(1);
 
@@ -154,7 +154,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -177,7 +177,7 @@ export async function DELETE(
       .from(brokerConnections)
       .where(and(
         eq(brokerConnections.id, parseInt(id)),
-        eq(brokerConnections.userId, session.user.id)
+        eq(brokerConnections.userId, session.id)
       ))
       .limit(1);
 

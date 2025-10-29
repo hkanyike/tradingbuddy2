@@ -32,7 +32,8 @@ export async function POST(req: NextRequest): Promise<NextResponse> {
       assetTypeId: body.assetTypeId || null,
       sector: body.sector?.trim() || null,
       liquidityRank: body.liquidityRank || null,
-      isActive: body.isActive !== undefined ? body.isActive : true
+      isActive: body.isActive !== undefined ? body.isActive : true,
+      createdAt: new Date().toISOString()
     }).returning()
 
     return NextResponse.json(newAsset[0], { status: 201 })

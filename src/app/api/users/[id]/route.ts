@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -28,7 +28,7 @@ export async function GET(
     }
 
     // Users can only access their own profile (unless admin in future)
-    if (id !== session.user.id) {
+    if (id !== session.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -59,7 +59,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -81,7 +81,7 @@ export async function PUT(
     }
 
     // Users can only update their own profile
-    if (id !== session.user.id) {
+    if (id !== session.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }
@@ -198,7 +198,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -220,7 +220,7 @@ export async function DELETE(
     }
 
     // Users can only delete their own profile
-    if (id !== session.user.id) {
+    if (id !== session.id) {
       return NextResponse.json(
         { error: 'Forbidden' },
         { status: 403 }

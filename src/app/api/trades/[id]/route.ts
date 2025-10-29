@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -31,7 +31,7 @@ export async function GET(
       .from(trades)
       .where(and(
         eq(trades.id, parseInt(id)),
-        eq(trades.userId, session.user.id)
+        eq(trades.userId, session.id)
       ))
       .limit(1);
 

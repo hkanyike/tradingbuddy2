@@ -64,16 +64,16 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(optionsQuotes.optionType, normalizedType));
     }
 
-    // Apply all conditions
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    // Apply ordering, pagination
-    const results = await query
-      .orderBy(desc(optionsQuotes.timestamp))
-      .limit(limit)
-      .offset(offset);
+    // Apply all conditions and execute query
+    const results = conditions.length > 0
+      ? await query.where(and(...conditions))
+          .orderBy(desc(optionsQuotes.timestamp))
+          .limit(limit)
+          .offset(offset)
+      : await query
+          .orderBy(desc(optionsQuotes.timestamp))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -77,8 +77,8 @@ export async function POST(request: NextRequest) {
         strategyId: strategyId || null,
         assetId: parseInt(assetId),
         positionType: positionType.trim(),
-        quantity: parseInt(quantity),
-        entryPrice: parseFloat(entryPrice),
+        quantity: typeof quantity === 'string' ? parseFloat(quantity) : quantity,
+        entryPrice: typeof entryPrice === 'string' ? parseFloat(entryPrice) : entryPrice,
         currentPrice: currentPrice !== undefined && currentPrice !== null ? parseFloat(currentPrice) : null,
         strikePrice: strikePrice !== undefined && strikePrice !== null ? parseFloat(strikePrice) : null,
         expirationDate: expirationDate || null,

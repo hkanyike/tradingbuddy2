@@ -63,7 +63,7 @@ export const RiskMeter = ({ portfolioHeat = 0, maxDrawdown = 0, sharpeRatio = 0,
               {(portfolioHeat * 100).toFixed(0)}%
             </span>
           </div>
-          <Progress value={portfolioHeat * 100} className="h-2" indicatorClassName={getHeatColor(portfolioHeat)} />
+          <Progress value={portfolioHeat * 100} className="h-2" />
           <p className={`text-xs ${heatStatus.color}`}>{heatStatus.text}</p>
         </div>
 
@@ -77,7 +77,6 @@ export const RiskMeter = ({ portfolioHeat = 0, maxDrawdown = 0, sharpeRatio = 0,
           <Progress 
             value={Math.abs(maxDrawdown) * 100} 
             className="h-2" 
-            indicatorClassName="bg-red-500" 
           />
           <p className="text-xs text-muted-foreground">Peak to trough decline</p>
         </div>

@@ -39,22 +39,25 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search');
 
-    let query = db.select().from(user).orderBy(desc(user.createdAt));
-
-    if (search) {
-      query = db
-        .select()
-        .from(user)
-        .where(
-          or(
-            like(user.name, `%${search}%`),
-            like(user.email, `%${search}%`)
+    const results = search
+      ? await db
+          .select()
+          .from(user)
+          .where(
+            or(
+              like(user.name, `%${search}%`),
+              like(user.email, `%${search}%`)
+            )
           )
-        )
-        .orderBy(desc(user.createdAt));
-    }
-
-    const results = await query.limit(limit).offset(offset);
+          .orderBy(desc(user.createdAt))
+          .limit(limit)
+          .offset(offset)
+      : await db
+          .select()
+          .from(user)
+          .orderBy(desc(user.createdAt))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(results, { status: 200 });
   } catch (error) {

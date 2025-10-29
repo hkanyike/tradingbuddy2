@@ -7,7 +7,7 @@ import { getCurrentUser } from '@/lib/auth';
 export async function POST(request: NextRequest) {
   try {
     // Authenticate user
-    const user = await getCurrentUser(request);
+    const user = await getCurrentUser();
     if (!user) {
       return NextResponse.json({ error: 'Authentication required' }, { status: 401 });
     }
@@ -82,8 +82,8 @@ export async function POST(request: NextRequest) {
       title: title.trim(),
       message: message.trim(),
       severity: severity || 'info',
-      isRead: isRead !== undefined ? (isRead ? 1 : 0) : 0,
-      isDismissed: isDismissed !== undefined ? (isDismissed ? 1 : 0) : 0,
+      isRead: isRead !== undefined ? Boolean(isRead) : false,
+      isDismissed: isDismissed !== undefined ? Boolean(isDismissed) : false,
       createdAt: new Date().toISOString()
     };
 

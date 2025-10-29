@@ -68,7 +68,8 @@ interface Strategy {
 }
 
 export default function ModelsPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -126,7 +127,7 @@ export default function ModelsPage() {
   const loadData = async () => {
     try {
       const token = localStorage.getItem("bearer_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
 
       const [modelsRes, strategiesRes] = await Promise.all([
         fetch("/api/ml-models", { headers }),
@@ -153,7 +154,7 @@ export default function ModelsPage() {
     
     try {
       const token = localStorage.getItem("bearer_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
       
       // Fetch training runs for this model
       const runsRes = await fetch(`/api/ml-models/${model.id}/train`, { headers });
@@ -800,7 +801,7 @@ export default function ModelsPage() {
                                   <div className="flex gap-4 text-xs">
                                     {Object.entries(run.trainingMetrics).map(([key, value]) => (
                                       <span key={key}>
-                                        <span className="text-muted-foreground">{key}:</span> <span className="font-medium">{typeof value === 'number' ? value.toFixed(4) : value}</span>
+                                        <span className="text-muted-foreground">{key}:</span> <span className="font-medium">{typeof value === 'number' ? value.toFixed(4) : String(value)}</span>
                                       </span>
                                     ))}
                                   </div>
@@ -812,7 +813,7 @@ export default function ModelsPage() {
                                   <div className="flex gap-4 text-xs">
                                     {Object.entries(run.validationMetrics).map(([key, value]) => (
                                       <span key={key}>
-                                        <span className="text-muted-foreground">{key}:</span> <span className="font-medium">{typeof value === 'number' ? value.toFixed(4) : value}</span>
+                                        <span className="text-muted-foreground">{key}:</span> <span className="font-medium">{typeof value === 'number' ? value.toFixed(4) : String(value)}</span>
                                       </span>
                                     ))}
                                   </div>

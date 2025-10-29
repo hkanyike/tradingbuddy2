@@ -18,18 +18,17 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function HomePage() {
-  const { data: session, refetch } = useSession();
+  const { data: session } = useSession();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
   const handleSignOut = async () => {
-    const { error } = await authClient.signOut();
-    if (error?.code) {
-      toast.error(error.code);
-    } else {
+    try {
+      await authClient.signOut();
       localStorage.removeItem("bearer_token");
-      refetch();
       router.push("/");
+    } catch (error) {
+      toast.error("Failed to sign out");
     }
   };
 

@@ -71,7 +71,7 @@ export default function AdminInviteCodesPage() {
     try {
       const token = typeof window !== "undefined" ? localStorage.getItem("bearer_token") : null;
       const res = await fetch("/api/admin/invite-codes?includeExpired=true", {
-        headers: token ? { Authorization: `Bearer ${token}` } : {},
+        headers: token ? { Authorization: `Bearer ${token}` } : { Authorization: '' },
         cache: "no-store",
       });
 
@@ -164,6 +164,15 @@ export default function AdminInviteCodesPage() {
     });
   };
 
+  const totalUses = useMemo(
+    () => inviteCodes.reduce((sum, c) => sum + (c.currentUses || 0), 0),
+    [inviteCodes]
+  );
+  const activeCount = useMemo(
+    () => inviteCodes.filter((c) => c.isActive).length,
+    [inviteCodes]
+  );
+
   // Loading states (page-level)
   if (status === "loading" || isLoading) {
     return (
@@ -175,15 +184,6 @@ export default function AdminInviteCodesPage() {
 
   // If not admin (already redirected), render nothing
   if (!isAdmin) return null;
-
-  const totalUses = useMemo(
-    () => inviteCodes.reduce((sum, c) => sum + (c.currentUses || 0), 0),
-    [inviteCodes]
-  );
-  const activeCount = useMemo(
-    () => inviteCodes.filter((c) => c.isActive).length,
-    [inviteCodes]
-  );
 
   return (
     <div className="min-h-screen bg-background">

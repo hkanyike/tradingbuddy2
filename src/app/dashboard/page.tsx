@@ -53,6 +53,7 @@ interface Position {
   id: number;
   symbol: string;
   type: string;
+  positionType?: "call" | "put"; // For options (call/put)
   quantity: number;
   entry_price: number;
   current_price: number;
@@ -61,6 +62,9 @@ interface Position {
   gamma: number;
   theta: number;
   vega: number;
+  expirationDate?: string; // For options
+  strikePrice?: number; // For options
+  iv?: number; // Implied volatility
   name?: string; // Asset name
   assetId?: number; // For looking up asset details
 }
@@ -208,7 +212,8 @@ interface FutureQuote {
 }
 
 export default function DashboardPage() {
-  const { data: session, isPending } = useSession();
+  const { data: session, status } = useSession();
+  const isPending = status === 'loading';
   const router = useRouter();
 
   const [positions, setPositions] = useState<Position[]>([]);
@@ -327,7 +332,7 @@ export default function DashboardPage() {
     const loadAssetTypes = async () => {
       try {
         const token = localStorage.getItem("bearer_token");
-        const headers = token ? { Authorization: `Bearer ${token}` } : {};
+        const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
         const res = await fetch("/api/asset-types", { headers });
         const data = await res.json();
         setAssetTypes(Array.isArray(data) ? data : []);
@@ -510,7 +515,7 @@ export default function DashboardPage() {
         asset: assets.find((a) => a.id === item.assetId),
       }))
       .filter((item) => item.asset);
-    const symbols = watchlistAssets.map(item => item.asset.symbol).filter(Boolean);
+    const symbols = watchlistAssets.map(item => item.asset?.symbol).filter((symbol): symbol is string => Boolean(symbol));
     setWatchlistSymbols(symbols);
   }, [watchlist, assets]);
 
@@ -527,7 +532,7 @@ export default function DashboardPage() {
       const pricePromises = symbols.map(async (symbol) => {
         try {
           const res = await fetch(`/api/alpaca/get-quote?symbol=${symbol}`, {
-            headers: token ? { Authorization: `Bearer ${token}` } : {},
+            headers: token ? { Authorization: `Bearer ${token}` } : { Authorization: '' },
           });
           if (res.ok) {
             const data = await res.json();
@@ -543,7 +548,7 @@ export default function DashboardPage() {
       const newPrices: Record<string, { price: number; change: number; changePercent: number }> = {};
       
       results.forEach((result) => {
-        if (result && result.data) {
+        if (result && result.data && result.symbol) {
           newPrices[result.symbol] = {
             price: result.data.price,
             change: result.data.change,
@@ -684,7 +689,7 @@ export default function DashboardPage() {
             gamma: greeks.gamma,
             theta: greeks.theta,
             vega: greeks.vega,
-            unrealizedPnl: (newPrice - (position.entryPrice ?? 0)) * (position.quantity ?? 0) * 100,
+            unrealizedPnl: (newPrice - (position.entry_price ?? 0)) * (position.quantity ?? 0) * 100,
           };
         });
       });
@@ -696,7 +701,7 @@ export default function DashboardPage() {
   const loadAllData = async () => {
     try {
       const token = localStorage.getItem("bearer_token");
-      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
 
       // Helper function to safely fetch and handle errors
       const safeFetch = async (url: string) => {
@@ -854,7 +859,7 @@ export default function DashboardPage() {
   const loadOptionsQuotes = async (symbol: string) => {
     try {
       const token = localStorage.getItem("bearer_token");
-      const headers = token ? { Authorization: `Bearer ${token}` } : {};
+      const headers = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
       const res = await fetch(`/api/market-data/options-quotes/latest?symbol=${symbol}&limit=20`, { headers });
       const data = await res.json();
       setOptionsQuotes(data || []);
@@ -1222,13 +1227,13 @@ export default function DashboardPage() {
   };
 
   const handleSignOut = async () => {
-    const { error } = await authClient.signOut();
-    if (error?.code) {
-      toast.error("Failed to sign out");
-    } else {
+    try {
+      await authClient.signOut();
       localStorage.removeItem("bearer_token");
       toast.success("Signed out successfully");
       router.push("/");
+    } catch (error) {
+      toast.error("Failed to sign out");
     }
   };
 
@@ -1917,6 +1922,7 @@ export default function DashboardPage() {
                 {watchlistAssets.length > 0 ? (
                   <div className="grid grid-cols-1 md:grid-cols-2 gap-3">
                     {watchlistAssets.map((item) => {
+                      if (!item.asset) return null;
                       const typeInfo = getAssetTypeInfo(item.asset.assetTypeId);
                       const TypeIcon = typeInfo.icon;
                       const priceData = watchlistPrices[item.asset.symbol];
@@ -1924,7 +1930,7 @@ export default function DashboardPage() {
                       return (
                         <button
                           key={item.id}
-                          onClick={() => openAssetDetails(item.asset)}
+                          onClick={() => openAssetDetails(item.asset!)}
                           className="w-full flex items-center justify-between p-4 bg-primary/5 rounded-lg border border-primary/20 group hover:bg-primary/10 transition-all duration-200 cursor-pointer"
                         >
                           <div className="flex items-center gap-3 flex-1 min-w-0">
@@ -1933,13 +1939,13 @@ export default function DashboardPage() {
                             </div>
                             <div className="flex-1 min-w-0 text-left">
                               <div className="flex items-center gap-2 flex-wrap">
-                                <span className="font-semibold text-base group-hover:text-primary transition-colors">{item.asset.symbol}</span>
+                                <span className="font-semibold text-base group-hover:text-primary transition-colors">{item.asset!.symbol}</span>
                                 <Badge variant="outline" className="text-xs">
                                   <TypeIcon className="h-3 w-3 mr-1" />
                                   {typeInfo.name}
                                 </Badge>
                               </div>
-                              <div className="text-xs text-muted-foreground line-clamp-1">{item.asset.name}</div>
+                              <div className="text-xs text-muted-foreground line-clamp-1">{item.asset!.name}</div>
                               {priceData ? (
                                 <div className="flex items-center gap-2 mt-1.5">
                                   <span className="text-sm font-bold">${priceData.price.toFixed(2)}</span>
@@ -1958,7 +1964,7 @@ export default function DashboardPage() {
                                 </div>
                               ) : (
                                 <div className="text-xs text-muted-foreground mt-1">
-                                  <Badge variant="secondary" className="text-xs">{item.asset.sector}</Badge>
+                                  <Badge variant="secondary" className="text-xs">{item.asset!.sector}</Badge>
                                 </div>
                               )}
                             </div>
@@ -1972,7 +1978,7 @@ export default function DashboardPage() {
                               onClick={(e) => {
                                 e.stopPropagation();
                                 removeFromWatchlist(item.id);
-                                toast.success(`Removed ${item.asset.symbol} from watchlist`);
+                                toast.success(`Removed ${item.asset?.symbol} from watchlist`);
                               }}
                             >
                               <X className="h-4 w-4" />
@@ -2021,9 +2027,10 @@ export default function DashboardPage() {
                 {aiRecommendedAssets.length > 0 ? (
                   <div className="space-y-3">
                     {aiRecommendedAssets.map((item) => {
+                      if (!item.asset) return null;
                       const typeInfo = getAssetTypeInfo(item.asset.assetTypeId);
                       const TypeIcon = typeInfo.icon;
-                      const isInWatchlist = watchlistAssets.some(w => w.assetId === item.asset.id);
+                      const isInWatchlist = watchlistAssets.some(w => w.assetId === item.asset!.id);
                       
                       return (
                         <button
@@ -2041,7 +2048,7 @@ export default function DashboardPage() {
                               </div>
                               <div className="flex-1">
                                 <div className="flex items-center gap-2 flex-wrap mb-1">
-                                  <span className="font-semibold text-base">{item.asset.symbol}</span>
+                                  <span className="font-semibold text-base">{item.asset!.symbol}</span>
                                   <Badge variant="outline" className="text-xs">
                                     <TypeIcon className="h-3 w-3 mr-1" />
                                     {typeInfo.name}
@@ -2050,7 +2057,7 @@ export default function DashboardPage() {
                                     {((item.recommendation.confidenceScore || 0) * 100).toFixed(0)}% confidence
                                   </Badge>
                                 </div>
-                                <div className="text-xs text-muted-foreground">{item.asset.name}</div>
+                                <div className="text-xs text-muted-foreground">{item.asset!.name}</div>
                               </div>
                             </div>
                             <div className="flex gap-2 flex-shrink-0">
@@ -2065,8 +2072,8 @@ export default function DashboardPage() {
                                   size="sm"
                                   onClick={(e) => {
                                     e.stopPropagation();
-                                    addToWatchlist(item.asset.id);
-                                    toast.success(`Added ${item.asset.symbol} to watchlist`);
+                                    addToWatchlist(item.asset!.id);
+                                    toast.success(`Added ${item.asset!.symbol} to watchlist`);
                                   }}
                                   className="gap-1.5"
                                 >
@@ -2260,7 +2267,7 @@ export default function DashboardPage() {
                         // Live Alpaca search results
                         alpacaSearchResults.length > 0 ? (
                           alpacaSearchResults.map((alpacaAsset) => {
-                            const isInWatchlist = watchlistAssets.some(w => w.asset.symbol === alpacaAsset.symbol);
+                            const isInWatchlist = watchlistAssets.some(w => w.asset?.symbol === alpacaAsset.symbol);
                             
                             return (
                               <button
@@ -2677,8 +2684,8 @@ export default function DashboardPage() {
                 </div>
                 <div className="space-y-2">
                   <div className="text-sm text-muted-foreground">Change</div>
-                  <div className={`text-lg font-semibold ${selectedLiveAsset.change >= 0 ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
-                    {selectedLiveAsset.change >= 0 ? '+' : ''}{selectedLiveAsset.change?.toFixed(2)} ({selectedLiveAsset.changePercent?.toFixed(2)}%)
+                  <div className={`text-lg font-semibold ${(selectedLiveAsset.change || 0) >= 0 ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
+                    {(selectedLiveAsset.change || 0) >= 0 ? '+' : ''}{(selectedLiveAsset.change || 0).toFixed(2)} ({(selectedLiveAsset.changePercent || 0).toFixed(2)}%)
                   </div>
                 </div>
               </div>

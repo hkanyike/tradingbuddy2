@@ -33,34 +33,44 @@ export async function GET(request: NextRequest) {
     }
 
     // Fetch positions with asset details
-    let positionsQuery = db.select({
-      id: paperPositions.id,
-      assetId: paperPositions.assetId,
-      symbol: assets.symbol,
-      name: assets.name,
-      sector: assets.sector,
-      quantity: paperPositions.quantity,
-      averageCost: paperPositions.averageCost,
-      currentPrice: paperPositions.currentPrice,
-      unrealizedPnl: paperPositions.unrealizedPnl,
-      realizedPnl: paperPositions.realizedPnl,
-      lastUpdated: paperPositions.lastUpdated,
-    })
-      .from(paperPositions)
-      .leftJoin(assets, eq(paperPositions.assetId, assets.id))
-      .where(eq(paperPositions.paperAccountId, parsedAccountId));
-
-    // Filter out closed positions if requested
-    if (!includeClosedPositions) {
-      positionsQuery = positionsQuery.where(
-        and(
-          eq(paperPositions.paperAccountId, parsedAccountId),
-          ne(paperPositions.quantity, 0)
-        )
-      );
-    }
-
-    const positions = await positionsQuery;
+    const positions = !includeClosedPositions
+      ? await db.select({
+          id: paperPositions.id,
+          assetId: paperPositions.assetId,
+          symbol: assets.symbol,
+          name: assets.name,
+          sector: assets.sector,
+          quantity: paperPositions.quantity,
+          averageCost: paperPositions.averageCost,
+          currentPrice: paperPositions.currentPrice,
+          unrealizedPnl: paperPositions.unrealizedPnl,
+          realizedPnl: paperPositions.realizedPnl,
+          lastUpdated: paperPositions.lastUpdated,
+        })
+          .from(paperPositions)
+          .leftJoin(assets, eq(paperPositions.assetId, assets.id))
+          .where(
+            and(
+              eq(paperPositions.paperAccountId, parsedAccountId),
+              ne(paperPositions.quantity, 0)
+            )
+          )
+      : await db.select({
+          id: paperPositions.id,
+          assetId: paperPositions.assetId,
+          symbol: assets.symbol,
+          name: assets.name,
+          sector: assets.sector,
+          quantity: paperPositions.quantity,
+          averageCost: paperPositions.averageCost,
+          currentPrice: paperPositions.currentPrice,
+          unrealizedPnl: paperPositions.unrealizedPnl,
+          realizedPnl: paperPositions.realizedPnl,
+          lastUpdated: paperPositions.lastUpdated,
+        })
+          .from(paperPositions)
+          .leftJoin(assets, eq(paperPositions.assetId, assets.id))
+          .where(eq(paperPositions.paperAccountId, parsedAccountId));
 
     // Calculate position metrics and portfolio summary
     let totalPositionValue = 0;

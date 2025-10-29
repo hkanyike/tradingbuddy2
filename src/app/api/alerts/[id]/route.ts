@@ -6,7 +6,7 @@ import { getCurrentUser } from "@/lib/auth";
 
 export async function GET(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -30,7 +30,7 @@ export async function GET(
       .from(alerts)
       .where(and(
         eq(alerts.id, parseInt(id)),
-        eq(alerts.userId, session.userId)
+        eq(alerts.userId, session.id)
       ))
       .limit(1);
 
@@ -53,7 +53,7 @@ export async function GET(
 
 export async function PUT(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -80,7 +80,7 @@ export async function PUT(
       .from(alerts)
       .where(and(
         eq(alerts.id, parseInt(id)),
-        eq(alerts.userId, session.userId)
+        eq(alerts.userId, session.id)
       ))
       .limit(1);
 
@@ -159,7 +159,7 @@ export async function PUT(
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: { id: string } }
+  { params }: { params: Promise<{ id: string }> }
 ) {
   const session = await getCurrentUser();
   if (!session) {
@@ -184,7 +184,7 @@ export async function DELETE(
       .from(alerts)
       .where(and(
         eq(alerts.id, parseInt(id)),
-        eq(alerts.userId, session.userId)
+        eq(alerts.userId, session.id)
       ))
       .limit(1);
 

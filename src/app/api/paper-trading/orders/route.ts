@@ -66,14 +66,15 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(paperOrders.status, status));
     }
 
-    if (conditions.length > 0) {
-      query = query.where(and(...conditions));
-    }
-
-    const orders = await query
-      .orderBy(desc(paperOrders.createdAt))
-      .limit(limit)
-      .offset(offset);
+    const orders = conditions.length > 0
+      ? await query.where(and(...conditions))
+          .orderBy(desc(paperOrders.createdAt))
+          .limit(limit)
+          .offset(offset)
+      : await query
+          .orderBy(desc(paperOrders.createdAt))
+          .limit(limit)
+          .offset(offset);
 
     return NextResponse.json(orders);
 

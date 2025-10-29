@@ -1,20 +1,21 @@
 import { db } from '@/db';
-import { users } from '@/db/schema';
+import { user } from '@/db/schema';
 
 async function main() {
     const sampleUsers = [
         {
+            id: 'demo-user-1',
             email: 'demo@tradingbuddy.ai',
             name: 'Demo Trader',
             portfolioBalance: 100000,
             riskTolerance: 'moderate',
             executionMode: 'manual',
-            createdAt: new Date().toISOString(),
-            updatedAt: new Date().toISOString(),
+      createdAt: new Date(),
+      updatedAt: new Date(),
         }
     ];
 
-    await db.insert(users).values(sampleUsers);
+    await db.insert(user).values(sampleUsers);
     
     console.log('✅ Users seeder completed successfully');
 }

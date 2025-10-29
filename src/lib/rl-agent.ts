@@ -440,7 +440,7 @@ export class ReinforcementLearningAgent {
       this.qTable.clear();
       for (const { state, actions } of modelData.qTable) {
         const actionsMap = new Map(actions);
-        this.qTable.set(state, actionsMap);
+        this.qTable.set(state, actionsMap as Map<string, QValue>);
       }
       
       this.epsilon = modelData.epsilon || this.epsilon;
