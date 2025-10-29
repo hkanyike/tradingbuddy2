@@ -76,11 +76,6 @@ interface MLModel {
 export default function BacktestPage() {
   const { data: session, status } = useSession();
   const isPending = status === 'loading';
-  
-  // Handle case where session is undefined during build
-  if (typeof window === 'undefined' && !session) {
-    return null;
-  }
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -132,6 +127,11 @@ export default function BacktestPage() {
 
     return () => clearInterval(interval);
   }, [isLiveUpdateEnabled, session]);
+
+  // Handle case where session is undefined during build
+  if (typeof window === 'undefined' && !session) {
+    return null;
+  }
 
   const loadData = async () => {
     try {
