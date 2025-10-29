@@ -1275,48 +1275,69 @@ export default function DashboardPage() {
                   </Button>
                 </Link>
                 
-                <Link href="/strategies">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Zap className="h-4 w-4 mr-1.5" />
-                    Strategies
-                  </Button>
-                </Link>
-                <Link href="/risk">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Shield className="h-4 w-4 mr-1.5" />
-                    Risk
-                  </Button>
-                </Link>
-                <Link href="/data">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Database className="h-4 w-4 mr-1.5" />
-                    Data
-                  </Button>
-                </Link>
-                <Link href="/backtest">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <TestTube className="h-4 w-4 mr-1.5" />
-                    Backtest
-                  </Button>
-                </Link>
-                <Link href="/models">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Brain className="h-4 w-4 mr-1.5" />
-                    Models
-                  </Button>
-                </Link>
-                <Link href="/news">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <Newspaper className="h-4 w-4 mr-1.5" />
-                    News
-                  </Button>
-                </Link>
-                <Link href="/settings">
-                  <Button variant="ghost" size="sm" className="hover:bg-secondary/80">
-                    <SettingsIcon className="h-4 w-4 mr-1.5" />
-                    Settings
-                  </Button>
-                </Link>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/strategies')}
+                >
+                  <Zap className="h-4 w-4 mr-1.5" />
+                  Strategies
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/risk')}
+                >
+                  <Shield className="h-4 w-4 mr-1.5" />
+                  Risk
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/data')}
+                >
+                  <Database className="h-4 w-4 mr-1.5" />
+                  Data
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/backtest')}
+                >
+                  <TestTube className="h-4 w-4 mr-1.5" />
+                  Backtest
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/models')}
+                >
+                  <Brain className="h-4 w-4 mr-1.5" />
+                  Models
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/news')}
+                >
+                  <Newspaper className="h-4 w-4 mr-1.5" />
+                  News
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/settings')}
+                >
+                  <SettingsIcon className="h-4 w-4 mr-1.5" />
+                  Settings
+                </Button>
               </nav>
             </div>
             
@@ -1340,12 +1361,18 @@ export default function DashboardPage() {
                       </Button>
                     </Link>
 
-                    <Link href="/strategies" onClick={() => setMobileMenuOpen(false)}>
-                      <Button variant="ghost" size="sm" className="w-full justify-start">
-                        <Zap className="h-4 w-4 mr-2" />
-                        Strategies
-                      </Button>
-                    </Link>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="w-full justify-start"
+                      onClick={() => {
+                        router.push('/strategies');
+                        setMobileMenuOpen(false);
+                      }}
+                    >
+                      <Zap className="h-4 w-4 mr-2" />
+                      Strategies
+                    </Button>
                     <Link href="/risk" onClick={() => setMobileMenuOpen(false)}>
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         <Shield className="h-4 w-4 mr-2" />
@@ -1906,7 +1933,12 @@ export default function DashboardPage() {
                       <Zap className="h-10 w-10 mx-auto mb-3 opacity-20" />
                       <p className="text-sm">No active strategies</p>
                       <Link href="/strategies">
-                        <Button size="sm" variant="outline" className="mt-3">
+                        <Button 
+                          size="sm" 
+                          variant="outline" 
+                          className="mt-3"
+                          onClick={() => router.push('/strategies/create')}
+                        >
                           <Plus className="h-4 w-4 mr-1.5" />
                           Configure Strategy
                         </Button>
@@ -2646,7 +2678,11 @@ export default function DashboardPage() {
                   <Star className="h-4 w-4 mr-2" />
                   Add to Watchlist
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => router.push(`/charts/${selectedAsset?.symbol || 'SPY'}`)}
+                >
                   <LineChart className="h-4 w-4 mr-2" />
                   View Charts
                 </Button>
@@ -2728,7 +2764,11 @@ export default function DashboardPage() {
                   <Star className="h-4 w-4 mr-2" />
                   Add to Watchlist
                 </Button>
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => router.push(`/charts/${selectedLiveAsset?.symbol || 'SPY'}`)}
+                >
                   <LineChart className="h-4 w-4 mr-2" />
                   View Charts
                 </Button>
@@ -2818,11 +2858,49 @@ export default function DashboardPage() {
               </div>
 
               <div className="flex gap-2 pt-4 border-t">
-                <Button variant="outline" className="flex-1">
+                <Button 
+                  variant="outline" 
+                  className="flex-1"
+                  onClick={() => {
+                    // Navigate to detailed analysis page
+                    router.push(`/analysis/${selectedPosition.symbol}`);
+                  }}
+                >
                   <LineChart className="h-4 w-4 mr-2" />
                   View Analysis
                 </Button>
-                <Button variant="destructive" className="flex-1">
+                <Button 
+                  variant="destructive" 
+                  className="flex-1"
+                  onClick={async () => {
+                    if (!selectedPosition) return;
+                    
+                    try {
+                      const token = localStorage.getItem("bearer_token");
+                      const response = await fetch(`/api/positions/${selectedPosition.id}/close`, {
+                        method: 'POST',
+                        headers: {
+                          'Content-Type': 'application/json',
+                          'Authorization': `Bearer ${token}`
+                        }
+                      });
+                      
+                      if (response.ok) {
+                        toast.success('Position closed successfully');
+                        setSelectedPosition(null);
+                        setPositionDialogOpen(false);
+                        // Refresh positions
+                        loadAllData();
+                      } else {
+                        const error = await response.json();
+                        toast.error(error.message || 'Failed to close position');
+                      }
+                    } catch (error) {
+                      console.error('Error closing position:', error);
+                      toast.error('Failed to close position');
+                    }
+                  }}
+                >
                   <X className="h-4 w-4 mr-2" />
                   Close Position
                 </Button>
