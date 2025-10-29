@@ -75,17 +75,18 @@ export async function POST(request: NextRequest) {
     }
 
     // Prepare insert data with authenticated user's text ID
+    const nowIso = new Date().toISOString();
     const insertData = {
       userId: user.id,
-      positionId: positionId ? parseInt(positionId) : null,
-      alertType: alertType.trim(),
+      type: alertType.trim(),
       title: title.trim(),
       message: message.trim(),
       severity: severity || 'info',
       isRead: isRead !== undefined ? Boolean(isRead) : false,
-      isDismissed: isDismissed !== undefined ? Boolean(isDismissed) : false,
-      createdAt: new Date().toISOString()
-    };
+      isActive: true,
+      triggeredAt: nowIso,
+      createdAt: nowIso
+    } as const;
 
     const newAlert = await db.insert(alerts)
       .values(insertData)

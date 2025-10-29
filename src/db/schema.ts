@@ -389,6 +389,20 @@ export const optionsQuotes = sqliteTable("options_quotes", {
   createdAt: text("created_at").notNull(),
 });
 
+// IV surface snapshots table
+export const ivSurfaceSnapshots = sqliteTable("iv_surface_snapshots", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  symbol: text("symbol").notNull(),
+  snapshotDate: text("snapshot_date").notNull(),
+  expirationDate: text("expiration_date").notNull(),
+  strikePrice: real("strike_price").notNull(),
+  daysToExpiration: integer("days_to_expiration").notNull(),
+  moneyness: real("moneyness").notNull(),
+  impliedVolatility: real("implied_volatility").notNull(),
+  optionType: text("option_type").notNull(), // 'call' | 'put'
+  createdAt: text("created_at").notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(user);
 export const selectUserSchema = createSelectSchema(user);
