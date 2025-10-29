@@ -53,8 +53,7 @@ export async function POST(
       .update(positions)
       .set({
         status: 'closed',
-        closedAt: Math.floor(now.getTime() / 1000), // Convert to Unix timestamp
-        updatedAt: Math.floor(now.getTime() / 1000) // Convert to Unix timestamp
+        updatedAt: now.toISOString() // Convert to ISO string for text field
       })
       .where(eq(positions.id, positionId));
 
