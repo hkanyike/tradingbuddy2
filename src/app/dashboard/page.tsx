@@ -219,17 +219,6 @@ export default function DashboardPage() {
   const isPending = status === 'loading';
   const router = useRouter();
 
-  // Show loading page while session is loading
-  if (isPending) {
-    return <LoadingPage text="Loading dashboard..." />;
-  }
-
-  // Redirect to sign-in if not authenticated
-  if (!session?.user) {
-    router.push("/sign-in");
-    return null;
-  }
-
   const [positions, setPositions] = useState<Position[]>([]);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric | null>(null);
   const [alerts, setAlerts] = useState<Alert[]>([]);
@@ -294,6 +283,17 @@ export default function DashboardPage() {
 
   // Get userId from session - no fallback to prevent data leakage
   const userId = session?.user?.id;
+
+  // Show loading page while session is loading
+  if (isPending) {
+    return <LoadingPage text="Loading dashboard..." />;
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!session?.user) {
+    router.push("/sign-in");
+    return null;
+  }
 
   useEffect(() => {
     if (!isPending && !session?.user) {
