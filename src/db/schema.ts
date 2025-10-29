@@ -406,15 +406,31 @@ export const ivSurfaceSnapshots = sqliteTable("iv_surface_snapshots", {
 // Market data fetch logs (tracks external data pulls)
 export const marketDataFetches = sqliteTable("market_data_fetches", {
   id: integer("id").primaryKey({ autoIncrement: true }),
-  source: text("source").notNull(), // e.g., 'alpaca', 'polygon', 'alpha_vantage'
-  symbol: text("symbol"),
+  // Generic fields used across sources
+  source: text("source"), // e.g., 'alpaca', 'polygon', 'alpha_vantage'
   endpoint: text("endpoint"),
-  status: text("status").notNull().default("started"), // 'started' | 'success' | 'error'
-  rowsFetched: integer("rows_fetched").default(0),
-  startedAt: text("started_at").notNull(),
-  finishedAt: text("finished_at"),
-  error: text("error"),
   createdAt: text("created_at").notNull(),
+  // Fields used by Alpaca options fetch route
+  fetchType: text("fetch_type"), // e.g., 'options_chain'
+  symbols: text("symbols"), // comma-separated list or single symbol
+  status: text("status").notNull().default("in_progress"), // 'in_progress' | 'completed' | 'failed'
+  recordsFetched: integer("records_fetched").default(0),
+  startedAt: text("started_at").notNull(),
+  completedAt: text("completed_at"),
+  errorMessage: text("error_message"),
+});
+
+// Invite codes table
+export const inviteCodes = sqliteTable("invite_codes", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  code: text("code").notNull().unique(),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  maxUses: integer("max_uses").notNull().default(1),
+  currentUses: integer("current_uses").notNull().default(0),
+  usedByUserId: text("used_by_user_id"),
+  expiresAt: text("expires_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 // Zod schemas for validation
