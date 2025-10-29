@@ -48,12 +48,13 @@ export async function POST(
     }
 
     // Close the position by updating its status
+    const now = new Date();
     await db
       .update(positions)
       .set({
         status: 'closed',
-        closedAt: new Date(),
-        updatedAt: new Date()
+        closedAt: Math.floor(now.getTime() / 1000), // Convert to Unix timestamp
+        updatedAt: Math.floor(now.getTime() / 1000) // Convert to Unix timestamp
       })
       .where(eq(positions.id, positionId));
 
