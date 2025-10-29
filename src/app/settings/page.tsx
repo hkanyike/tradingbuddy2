@@ -422,3 +422,6 @@ export default function SettingsPage() {
   );
 }
 
+// Force dynamic rendering to prevent static generation issues
+export const dynamic = 'force-dynamic';
+
