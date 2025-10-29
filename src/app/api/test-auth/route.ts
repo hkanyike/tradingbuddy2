@@ -1,28 +1,32 @@
-// File: src/app/api/test-auth/route.ts
+// Test endpoint to verify auth setup
 import { NextRequest, NextResponse } from "next/server";
 import { getServerSession } from "next-auth";
 import { authOptions } from "@/lib/auth-options";
+import { db } from "@/db";
+import { user } from "@/db/schema";
 
-export async function GET(_req: NextRequest) {
+export async function GET(request: NextRequest) {
   try {
+    // Test database connection
+    const userCount = await db.select().from(user).limit(1);
+    
+    // Test auth options
     const session = await getServerSession(authOptions);
-
-    if (!session || !session.user) {
-      return NextResponse.json({ authenticated: false }, { status: 401 });
-    }
-
+    
     return NextResponse.json({
-      authenticated: true,
-      user: {
-        id: (session.user as any).id,
-        email: session.user.email,
-        name: session.user.name,
-        isAdmin: (session.user as any).isAdmin ?? false,
-      },
+      success: true,
+      database: "connected",
+      authOptions: "loaded",
+      session: session ? "authenticated" : "not authenticated",
+      userCount: userCount.length,
+      timestamp: new Date().toISOString()
     });
   } catch (error) {
-    console.error("test-auth error:", error);
-    return NextResponse.json({ error: "Internal error" }, { status: 500 });
+    console.error("Auth test error:", error);
+    return NextResponse.json({
+      success: false,
+      error: error instanceof Error ? error.message : "Unknown error",
+      timestamp: new Date().toISOString()
+    }, { status: 500 });
   }
 }
-

@@ -41,7 +41,7 @@ export default function SignInPage() {
     console.log("📧 [USER SIGN-IN] Email:", userFormData.email);
 
     try {
-      console.log("📡 [USER SIGN-IN] Calling authClient.signIn.email()...");
+      console.log("📡 [USER SIGN-IN] Calling authClient.signIn()...");
       const result = await authClient.signIn("credentials", {
         email: userFormData.email,
         password: userFormData.password,
@@ -83,7 +83,7 @@ export default function SignInPage() {
     console.log("📧 [ADMIN SIGN-IN] Email:", adminFormData.email);
 
     try {
-      console.log("📡 [ADMIN SIGN-IN] Calling authClient.signIn.email()...");
+      console.log("📡 [ADMIN SIGN-IN] Calling authClient.signIn()...");
       const result = await authClient.signIn("credentials", {
         email: adminFormData.email,
         password: adminFormData.password,
