@@ -57,11 +57,11 @@ export async function PUT(
     const sanitizedDescription = description?.trim();
 
     // Check if typeName is being changed to a name that already exists
-    if (sanitizedTypeName !== existingAssetType[0].typeName) {
+    if (sanitizedTypeName !== existingAssetType[0].name) {
       const duplicateCheck = await db
         .select()
         .from(assetTypes)
-        .where(eq(assetTypes.typeName, sanitizedTypeName))
+        .where(eq(assetTypes.name, sanitizedTypeName))
         .limit(1);
 
       if (duplicateCheck.length > 0) {
@@ -79,7 +79,7 @@ export async function PUT(
     const updated = await db
       .update(assetTypes)
       .set({
-        typeName: sanitizedTypeName,
+        name: sanitizedTypeName,
         description: sanitizedDescription
       })
       .where(eq(assetTypes.id, assetTypeId))
