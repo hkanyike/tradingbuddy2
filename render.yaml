@@ -1,0 +1,30 @@
+services:
+  - type: web
+    name: tradingbuddy2
+    env: node
+    plan: free
+    autoDeploy: true
+
+    buildCommand: npm install --legacy-peer-deps && npm run build
+    startCommand: next start -p $PORT
+
+    envVars:
+      - key: NODE_VERSION
+        value: 20
+      # Set these in the Render dashboard (keep sync: false)
+      - key: DATABASE_URL
+        sync: false
+      - key: NEXTAUTH_URL
+        sync: false
+      - key: NEXTAUTH_SECRET
+        sync: false
+      # Optional integrations your app may use
+      - key: ALPACA_API_KEY
+        sync: false
+      - key: ALPACA_API_SECRET
+        sync: false
+      - key: OPENAI_API_KEY
+        sync: false
+
+    healthCheckPath: /
+
