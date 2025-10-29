@@ -284,17 +284,6 @@ export default function DashboardPage() {
   // Get userId from session - no fallback to prevent data leakage
   const userId = session?.user?.id;
 
-  // Show loading page while session is loading
-  if (isPending) {
-    return <LoadingPage text="Loading dashboard..." />;
-  }
-
-  // Redirect to sign-in if not authenticated
-  if (!session?.user) {
-    router.push("/sign-in");
-    return null;
-  }
-
   useEffect(() => {
     if (!isPending && !session?.user) {
       router.push("/sign-in");
@@ -1097,6 +1086,17 @@ export default function DashboardPage() {
     recommendation: rec,
     asset: allAssets.find(a => a.id === rec.assetId)
   })).filter(item => item.asset);
+
+  // Show loading page while session is loading
+  if (isPending) {
+    return <LoadingPage text="Loading dashboard..." />;
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!session?.user) {
+    router.push("/sign-in");
+    return null;
+  }
 
   if (isLoading) {
     return (
@@ -3070,4 +3070,5 @@ export default function DashboardPage() {
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
+
 
