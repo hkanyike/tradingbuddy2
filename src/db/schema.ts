@@ -403,6 +403,20 @@ export const ivSurfaceSnapshots = sqliteTable("iv_surface_snapshots", {
   createdAt: text("created_at").notNull(),
 });
 
+// Market data fetch logs (tracks external data pulls)
+export const marketDataFetches = sqliteTable("market_data_fetches", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  source: text("source").notNull(), // e.g., 'alpaca', 'polygon', 'alpha_vantage'
+  symbol: text("symbol"),
+  endpoint: text("endpoint"),
+  status: text("status").notNull().default("started"), // 'started' | 'success' | 'error'
+  rowsFetched: integer("rows_fetched").default(0),
+  startedAt: text("started_at").notNull(),
+  finishedAt: text("finished_at"),
+  error: text("error"),
+  createdAt: text("created_at").notNull(),
+});
+
 // Zod schemas for validation
 export const insertUserSchema = createInsertSchema(user);
 export const selectUserSchema = createSelectSchema(user);
