@@ -247,6 +247,26 @@ export const backtests = sqliteTable("backtests", {
   completedAt: text("completed_at"),
 });
 
+// Backtest daily metrics table
+export const backtestDailyMetrics = sqliteTable("backtest_daily_metrics", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  backtestId: integer("backtest_id").notNull().references(() => backtests.id),
+  date: text("date").notNull(),
+  equity: real("equity").notNull(),
+  cash: real("cash").notNull(),
+  positionsValue: real("positions_value").notNull(),
+  dailyPnl: real("daily_pnl").notNull(),
+  dailyReturn: real("daily_return").notNull(),
+  cumulativeReturn: real("cumulative_return").notNull(),
+  drawdown: real("drawdown").notNull(),
+  openPositions: integer("open_positions").notNull(),
+  netDelta: real("net_delta"),
+  netGamma: real("net_gamma"),
+  netTheta: real("net_theta"),
+  netVega: real("net_vega"),
+  var95: real("var_95"),
+});
+
 // Backtest trades table
 export const backtestTrades = sqliteTable("backtest_trades", {
   id: integer("id").primaryKey({ autoIncrement: true }),
