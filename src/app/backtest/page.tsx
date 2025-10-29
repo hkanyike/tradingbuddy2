@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import dynamic from "next/dynamic";
 import Link from "next/link";
 import { TrendingUp, Play, Settings as SettingsIcon, FileText, BarChart3, Zap, Shield, Database, TestTube, Brain, Newspaper, Menu, Wifi, WifiOff, RefreshCw, Loader2, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -753,6 +752,6 @@ export default function BacktestPage() {
   );
 }
 
-// Make this page dynamic to prevent static generation issues
+// Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
 
