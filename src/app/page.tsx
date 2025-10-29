@@ -369,6 +369,3 @@ export default function HomePage() {
 
 // Force dynamic rendering to prevent static generation issues
 export const dynamic = 'force-dynamic';
-
-/ /   F o r c e   r e b u i l d   1 0 / 2 9 / 2 0 2 5   1 0 : 5 9 : 1 5  
- 
