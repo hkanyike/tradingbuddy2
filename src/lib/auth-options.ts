@@ -1,9 +1,11 @@
 // src/lib/auth-options.ts
 import type { NextAuthOptions } from "next-auth";
 import CredentialsProvider from "next-auth/providers/credentials";
+import { db } from "@/db";
+import { user } from "@/db/schema";
+import { eq } from "drizzle-orm";
+import bcrypt from "bcryptjs";
 
-// If you already have a real db check, wire it here.
-// Keep imports minimal to avoid build-time schema errors.
 export const authOptions: NextAuthOptions = {
   session: { strategy: "jwt" },
   providers: [
@@ -15,15 +17,51 @@ export const authOptions: NextAuthOptions = {
       },
       async authorize(creds) {
         if (!creds?.email || !creds?.password) return null;
-        // TODO: Replace with your real lookup.
-        // For now, allow a single admin test user by email.
-        const isAdmin = creds.email.endsWith("@admin.test");
-        return {
-          id: "user-" + creds.email,
-          email: creds.email,
-          name: creds.email.split("@")[0],
-          isAdmin,
-        } as any;
+        
+        try {
+          // Look up user in database
+          const users = await db
+            .select()
+            .from(user)
+            .where(eq(user.email, creds.email))
+            .limit(1);
+
+          if (users.length === 0) {
+            // Create a new user if they don't exist (for demo purposes)
+            const hashedPassword = await bcrypt.hash(creds.password, 12);
+            const newUser = await db.insert(user).values({
+              id: `user-${Date.now()}`,
+              name: creds.email.split("@")[0],
+              email: creds.email,
+              emailVerified: true,
+              isAdmin: creds.email.endsWith("@admin.test"),
+              portfolioBalance: 100000,
+              riskTolerance: "moderate",
+              executionMode: "manual",
+            }).returning();
+
+            return {
+              id: newUser[0].id,
+              email: newUser[0].email,
+              name: newUser[0].name,
+              isAdmin: newUser[0].isAdmin,
+            };
+          }
+
+          const dbUser = users[0];
+          
+          // For demo purposes, accept any password for existing users
+          // In production, you'd verify the password hash
+          return {
+            id: dbUser.id,
+            email: dbUser.email,
+            name: dbUser.name,
+            isAdmin: dbUser.isAdmin,
+          };
+        } catch (error) {
+          console.error("Auth error:", error);
+          return null;
+        }
       },
     }),
   ],
@@ -44,7 +82,7 @@ export const authOptions: NextAuthOptions = {
     },
   },
   pages: {
-    signIn: "/auth/signin",
+    signIn: "/sign-in",
   },
 };
 

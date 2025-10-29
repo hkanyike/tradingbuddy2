@@ -61,7 +61,9 @@ export default function StrategiesPage() {
   }, [isLiveUpdateEnabled]);
 
   useEffect(() => {
-    const userId = "1";
+    if (!session?.user) return;
+    
+    const userId = (session.user as any).id;
     
     fetch(`/api/strategies/user/${userId}`)
       .then(res => res.json())
@@ -73,7 +75,7 @@ export default function StrategiesPage() {
         console.error("Error fetching strategies:", error);
         setIsLoading(false);
       });
-  }, []);
+  }, [session]);
 
   const toggleStrategy = async (strategyId: number, isActive: boolean) => {
     const newStatus = !isActive;

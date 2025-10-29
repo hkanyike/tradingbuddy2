@@ -52,8 +52,9 @@ export default function SettingsPage() {
   }, [isLiveUpdateEnabled]);
 
   useEffect(() => {
-    // Mock user ID - replace with actual auth
-    const userId = "1";
+    if (!session?.user) return;
+    
+    const userId = (session.user as any).id;
     
     fetch(`/api/broker-connections/user/${userId}`)
       .then(res => res.json())
@@ -65,7 +66,7 @@ export default function SettingsPage() {
         console.error("Error fetching broker connections:", error);
         setIsLoading(false);
       });
-  }, []);
+  }, [session]);
 
   if (isLoading) {
     return (

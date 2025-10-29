@@ -84,12 +84,15 @@ export default function PaperTradingPage() {
   }, [session]);
 
   const loadPaperTradingData = async () => {
+    if (!session?.user) return;
+    
     try {
       setLoading(true);
       const token = localStorage.getItem("bearer_token");
+      const userId = (session.user as any).id;
 
       // Fetch or create paper trading account
-      const accountRes = await fetch(`/api/paper-trading/accounts?userId=1`, {
+      const accountRes = await fetch(`/api/paper-trading/accounts?userId=${userId}`, {
         headers: { Authorization: `Bearer ${token}` }
       });
       
@@ -103,7 +106,7 @@ export default function PaperTradingPage() {
             "Content-Type": "application/json",
             Authorization: `Bearer ${token}`
           },
-          body: JSON.stringify({ userId: 1, initialBalance: 100000 })
+          body: JSON.stringify({ userId, initialBalance: 100000 })
         });
         const initData = await initRes.json();
         accountData = initData.account;

@@ -41,6 +41,9 @@ import { EconomicEvents } from "@/components/dashboard/economic-events";
 import { calculateGreeks } from "@/lib/greeks-calculator";
 import { toast } from "sonner";
 import { Label } from "@/components/ui/label";
+import { LoadingSpinner, LoadingPage } from "@/components/ui/loading-spinner";
+import { EmptyState } from "@/components/ui/empty-state";
+import { safeApiCall } from "@/lib/api-client";
 import {
   Select,
   SelectContent,
@@ -215,6 +218,17 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const isPending = status === 'loading';
   const router = useRouter();
+
+  // Show loading page while session is loading
+  if (isPending) {
+    return <LoadingPage text="Loading dashboard..." />;
+  }
+
+  // Redirect to sign-in if not authenticated
+  if (!session?.user) {
+    router.push("/sign-in");
+    return null;
+  }
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric | null>(null);
@@ -699,6 +713,8 @@ export default function DashboardPage() {
   }, [isLiveUpdateEnabled]);
 
   const loadAllData = async () => {
+    if (!userId) return;
+    
     try {
       const token = localStorage.getItem("bearer_token");
       const headers: HeadersInit = token ? { Authorization: `Bearer ${token}` } : { Authorization: '' };
@@ -772,6 +788,7 @@ export default function DashboardPage() {
       }
     } catch (error) {
       console.error("Error loading dashboard data:", error);
+      toast.error("Failed to load dashboard data. Please try again.");
       if (isLoading) {
         setIsLoading(false);
       }

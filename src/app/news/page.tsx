@@ -63,7 +63,8 @@ export default function NewsPage() {
   useEffect(() => {
     const loadWatchlist = async () => {
       try {
-        const userId = "1";
+        const userId = session?.user ? (session.user as any).id : null;
+        if (!userId) return;
         const [assetsRes, watchlistRes] = await Promise.all([
           fetch("/api/assets").then(res => res.json()),
           fetch(`/api/watchlist?userId=${userId}`).then(res => res.json())

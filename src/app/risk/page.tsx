@@ -55,7 +55,9 @@ export default function RiskPage() {
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
   const [isLiveUpdateEnabled, setIsLiveUpdateEnabled] = useState(true);
   const [wsConnected, setWsConnected] = useState(false);
-  const userId = "1";
+  
+  // Get current user ID from session
+  const userId = session?.user ? (session.user as any).id : null;
 
   useEffect(() => {
     if (!isPending && !session?.user) {
@@ -83,6 +85,8 @@ export default function RiskPage() {
   }, [isLiveUpdateEnabled, session]);
 
   const loadRiskData = async () => {
+    if (!userId) return;
+    
     try {
       const [positionsData, riskData] = await Promise.all([
         fetch(`/api/positions/user/${userId}/open`).then(res => res.json()),
