@@ -1,6 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
+import dynamic from "next/dynamic";
 import Link from "next/link";
 import { TrendingUp, Play, Settings as SettingsIcon, FileText, BarChart3, Zap, Shield, Database, TestTube, Brain, Newspaper, Menu, Wifi, WifiOff, RefreshCw, Loader2, ArrowUpRight, ArrowDownRight } from "lucide-react";
 import { Button } from "@/components/ui/button";
@@ -76,6 +77,11 @@ interface MLModel {
 export default function BacktestPage() {
   const { data: session, status } = useSession();
   const isPending = status === 'loading';
+  
+  // Handle case where session is undefined during build
+  if (typeof window === 'undefined' && !session) {
+    return null;
+  }
   const router = useRouter();
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const [lastUpdate, setLastUpdate] = useState<Date>(new Date());
@@ -746,4 +752,7 @@ export default function BacktestPage() {
     </div>
   );
 }
+
+// Make this page dynamic to prevent static generation issues
+export const dynamic = 'force-dynamic';
 
