@@ -11,9 +11,16 @@ services:
     envVars:
       - key: NODE_VERSION
         value: 20
-      # Set these in the Render dashboard (keep sync: false)
+      # Database configuration - supports both TURSO_* and DATABASE_* formats
       - key: DATABASE_URL
         sync: false
+      - key: TURSO_CONNECTION_URL
+        sync: false
+      - key: TURSO_AUTH_TOKEN
+        sync: false
+      - key: DATABASE_AUTH_TOKEN
+        sync: false
+      # Authentication
       - key: NEXTAUTH_URL
         sync: false
       - key: NEXTAUTH_SECRET
