@@ -18,7 +18,8 @@ import { useRouter } from "next/navigation";
 import { toast } from "sonner";
 
 export default function HomePage() {
-  const { data: session } = useSession();
+  const sessionResult = useSession();
+  const session = sessionResult?.data;
   const [mobileMenuOpen, setMobileMenuOpen] = useState(false);
   const router = useRouter();
 
