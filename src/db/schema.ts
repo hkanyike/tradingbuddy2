@@ -102,6 +102,50 @@ export const trades = sqliteTable("trades", {
   createdAt: text("created_at").notNull(),
 });
 
+// Paper trading accounts table
+export const paperTradingAccounts = sqliteTable("paper_trading_accounts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  userId: text("user_id").notNull().references(() => user.id),
+  cashBalance: real("cash_balance").notNull().default(100000),
+  initialBalance: real("initial_balance").notNull().default(100000),
+  totalEquity: real("total_equity").notNull().default(100000),
+  totalPnl: real("total_pnl").notNull().default(0),
+  isActive: integer("is_active", { mode: "boolean" }).default(true),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
+// Paper trading positions table
+export const paperPositions = sqliteTable("paper_positions", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  paperAccountId: integer("paper_account_id").notNull().references(() => paperTradingAccounts.id),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  quantity: integer("quantity").notNull(),
+  averageCost: real("average_cost").notNull(),
+  currentPrice: real("current_price"),
+  unrealizedPnl: real("unrealized_pnl").notNull().default(0),
+  realizedPnl: real("realized_pnl").notNull().default(0),
+  lastUpdated: text("last_updated").notNull(),
+});
+
+// Paper trading orders table
+export const paperOrders = sqliteTable("paper_orders", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  paperAccountId: integer("paper_account_id").notNull().references(() => paperTradingAccounts.id),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  orderType: text("order_type").notNull(), // 'market' | 'limit' | 'stop'
+  side: text("side").notNull(), // 'buy' | 'sell'
+  quantity: integer("quantity").notNull(),
+  limitPrice: real("limit_price"),
+  stopPrice: real("stop_price"),
+  status: text("status").notNull().default("pending"),
+  filledQuantity: integer("filled_quantity").notNull().default(0),
+  filledPrice: real("filled_price"),
+  filledAt: text("filled_at"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
+});
+
 // Risk metrics table
 export const riskMetrics = sqliteTable("risk_metrics", {
   id: integer("id").primaryKey({ autoIncrement: true }),
@@ -242,6 +286,21 @@ export const walkForwardTests = sqliteTable("walk_forward_tests", {
   completedAt: text("completed_at"),
 });
 
+// Volatility forecasts table
+export const volatilityForecasts = sqliteTable("volatility_forecasts", {
+  id: integer("id").primaryKey({ autoIncrement: true }),
+  modelId: integer("model_id").notNull(),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
+  forecastType: text("forecast_type").notNull(),
+  forecastHorizonDays: integer("forecast_horizon_days").notNull(),
+  forecastedVolatility: real("forecasted_volatility").notNull(),
+  confidenceLower: real("confidence_lower").notNull(),
+  confidenceUpper: real("confidence_upper").notNull(),
+  timestamp: text("timestamp").notNull(),
+  realizedVolatility: real("realized_volatility"),
+  forecastError: real("forecast_error"),
+});
+
 // ML Models table
 export const mlModels = sqliteTable("ml_models", {
   id: text("id").primaryKey(),
@@ -287,6 +346,23 @@ export const mlPredictions = sqliteTable("ml_predictions", {
   actualValue: real("actual_value"),
   predictionError: real("prediction_error"),
   createdAt: text("created_at").notNull(),
+});
+
+// Accounts table (for credential-based auth records)
+export const account = sqliteTable("account", {
+  id: text("id").primaryKey(),
+  accountId: text("account_id"),
+  providerId: text("provider_id").notNull(),
+  userId: text("user_id").notNull().references(() => user.id),
+  password: text("password"),
+  accessToken: text("access_token"),
+  refreshToken: text("refresh_token"),
+  idToken: text("id_token"),
+  accessTokenExpiresAt: text("access_token_expires_at"),
+  refreshTokenExpiresAt: text("refresh_token_expires_at"),
+  scope: text("scope"),
+  createdAt: text("created_at").notNull(),
+  updatedAt: text("updated_at").notNull(),
 });
 
 // Zod schemas for validation
