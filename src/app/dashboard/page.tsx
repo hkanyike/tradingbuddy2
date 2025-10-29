@@ -34,6 +34,7 @@ import { useRouter } from "next/navigation";
 import { ThemeToggle } from "@/components/theme-toggle";
 import { createAlpacaWebSocket, type AlpacaWebSocketClient } from "@/lib/alpaca-websocket";
 import { createAIRecommendationEngine, type Recommendation } from "@/lib/ai-recommendation-engine";
+import { marketDataService } from "@/lib/market-data-service";
 import { NewsFeed } from "@/components/dashboard/news-feed";
 import { SentimentIndicator } from "@/components/dashboard/sentiment-indicator";
 import { EarningsCalendar } from "@/components/dashboard/earnings-calendar";
@@ -299,36 +300,52 @@ export default function DashboardPage() {
     }
   }, [session, isPending]);
 
-  // Initialize market data
+  // Initialize market data with real data
   useEffect(() => {
-    // Simulate major indexes
-    const indexes: MarketIndex[] = [
-      { symbol: "SPY", name: "S&P 500 ETF", price: 450.25, change: 2.15, changePercent: 0.48 },
-      { symbol: "QQQ", name: "Nasdaq 100 ETF", price: 378.90, change: -1.25, changePercent: -0.33 },
-      { symbol: "DIA", name: "Dow Jones ETF", price: 350.75, change: 3.50, changePercent: 1.01 },
-      { symbol: "IWM", name: "Russell 2000 ETF", price: 185.40, change: 0.85, changePercent: 0.46 }
-    ];
-    setMarketIndexes(indexes);
+    const loadMarketData = async () => {
+      try {
+        // Load real market indexes
+        const indexes = await marketDataService.getMarketIndexes();
+        setMarketIndexes(indexes);
 
-    // Simulate top stocks
-    const stocks: StockQuote[] = [
-      { symbol: "AAPL", name: "Apple Inc.", price: 178.50, change: 1.25, changePercent: 0.71, volume: 52000000 },
-      { symbol: "MSFT", name: "Microsoft Corp.", price: 380.25, change: -2.15, changePercent: -0.56, volume: 28000000 },
-      { symbol: "NVDA", name: "NVIDIA Corp.", price: 495.75, change: 8.50, changePercent: 1.74, volume: 45000000 },
-      { symbol: "TSLA", name: "Tesla Inc.", price: 245.80, change: -3.20, changePercent: -1.28, volume: 95000000 },
-      { symbol: "GOOGL", name: "Alphabet Inc.", price: 142.30, change: 0.85, changePercent: 0.60, volume: 22000000 },
-      { symbol: "AMZN", name: "Amazon.com Inc.", price: 155.60, change: 1.95, changePercent: 1.27, volume: 38000000 }
-    ];
-    setStockQuotes(stocks);
+        // Load real stock quotes for top stocks
+        const stockSymbols = ['AAPL', 'MSFT', 'NVDA', 'TSLA', 'GOOGL', 'AMZN'];
+        const stocks = await marketDataService.getStockQuotes(stockSymbols);
+        setStockQuotes(stocks);
 
-    // Simulate futures
-    const futures: FutureQuote[] = [
-      { symbol: "ES", name: "E-mini S&P 500", price: 4520.25, change: 15.50, changePercent: 0.34 },
-      { symbol: "NQ", name: "E-mini Nasdaq", price: 15678.50, change: -25.75, changePercent: -0.16 },
-      { symbol: "YM", name: "E-mini Dow", price: 35210.00, change: 45.00, changePercent: 0.13 },
-      { symbol: "RTY", name: "E-mini Russell 2000", price: 1855.60, change: 8.20, changePercent: 0.44 }
-    ];
-    setFuturesQuotes(futures);
+        // Load futures data
+        const futures = await marketDataService.getFuturesQuotes();
+        setFuturesQuotes(futures);
+      } catch (error) {
+        console.error('Error loading market data:', error);
+        // Fallback to mock data if real data fails
+        const indexes = [
+          { symbol: "SPY", name: "S&P 500 ETF", price: 450.25, change: 2.15, changePercent: 0.48 },
+          { symbol: "QQQ", name: "Nasdaq 100 ETF", price: 378.90, change: -1.25, changePercent: -0.33 },
+          { symbol: "DIA", name: "Dow Jones ETF", price: 350.75, change: 3.50, changePercent: 1.01 },
+          { symbol: "IWM", name: "Russell 2000 ETF", price: 185.40, change: 0.85, changePercent: 0.46 }
+        ];
+        setMarketIndexes(indexes);
+        const stocks = [
+          { symbol: "AAPL", name: "Apple Inc.", price: 178.50, change: 1.25, changePercent: 0.71, volume: 52000000 },
+          { symbol: "MSFT", name: "Microsoft Corp.", price: 380.25, change: -2.15, changePercent: -0.56, volume: 28000000 },
+          { symbol: "NVDA", name: "NVIDIA Corp.", price: 495.75, change: 8.50, changePercent: 1.74, volume: 45000000 },
+          { symbol: "TSLA", name: "Tesla Inc.", price: 245.80, change: -3.20, changePercent: -1.28, volume: 95000000 },
+          { symbol: "GOOGL", name: "Alphabet Inc.", price: 142.30, change: 0.85, changePercent: 0.60, volume: 22000000 },
+          { symbol: "AMZN", name: "Amazon.com Inc.", price: 155.60, change: 1.95, changePercent: 1.27, volume: 38000000 }
+        ];
+        setStockQuotes(stocks);
+        const futures = [
+          { symbol: "ES", name: "E-mini S&P 500", price: 4520.25, change: 15.50, changePercent: 0.34 },
+          { symbol: "NQ", name: "E-mini Nasdaq", price: 15678.50, change: -25.75, changePercent: -0.16 },
+          { symbol: "YM", name: "E-mini Dow", price: 35210.00, change: 45.00, changePercent: 0.13 },
+          { symbol: "RTY", name: "E-mini Russell 2000", price: 1855.60, change: 8.20, changePercent: 0.44 }
+        ];
+        setFuturesQuotes(futures);
+      }
+    };
+
+    loadMarketData();
   }, []);
 
   useEffect(() => {
