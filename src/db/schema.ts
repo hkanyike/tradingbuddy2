@@ -267,21 +267,29 @@ export const backtestDailyMetrics = sqliteTable("backtest_daily_metrics", {
   var95: real("var_95"),
 });
 
-// Backtest trades table
+// Backtest trades table (aligns with migration 0008)
 export const backtestTrades = sqliteTable("backtest_trades", {
   id: integer("id").primaryKey({ autoIncrement: true }),
   backtestId: integer("backtest_id").notNull().references(() => backtests.id),
-  symbol: text("symbol").notNull(),
+  assetId: integer("asset_id").notNull().references(() => assets.id),
   tradeType: text("trade_type").notNull(),
-  quantity: integer("quantity").notNull(),
+  side: text("side").notNull(),
+  entryDate: text("entry_date").notNull(),
+  exitDate: text("exit_date"),
   entryPrice: real("entry_price").notNull(),
   exitPrice: real("exit_price"),
+  quantity: integer("quantity").notNull(),
+  commission: real("commission").notNull(),
+  slippage: real("slippage").notNull(),
   pnl: real("pnl"),
-  pnlPercent: real("pnl_percent"),
-  entryTime: text("entry_time").notNull(),
-  exitTime: text("exit_time"),
-  duration: integer("duration"), // in minutes
-  createdAt: text("created_at").notNull(),
+  pnlPercentage: real("pnl_percentage"),
+  maxAdverseExcursion: real("max_adverse_excursion"),
+  maxFavorableExcursion: real("max_favorable_excursion"),
+  holdDurationHours: real("hold_duration_hours"),
+  entrySignals: text("entry_signals").notNull(),
+  exitReason: text("exit_reason"),
+  greeksAtEntry: text("greeks_at_entry"),
+  greeksAtExit: text("greeks_at_exit"),
 });
 
 // Walk forward tests table
