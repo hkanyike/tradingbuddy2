@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
         .from(assetTypes)
         .where(
           or(
-            like(assetTypes.typeName, `%${search}%`),
+            like(assetTypes.name, `%${search}%`),
             like(assetTypes.description, `%${search}%`)
           )
         )
@@ -91,7 +91,7 @@ export async function POST(request: NextRequest) {
     const existingAssetType = await db
       .select()
       .from(assetTypes)
-      .where(eq(assetTypes.typeName, sanitizedTypeName))
+      .where(eq(assetTypes.name, sanitizedTypeName))
       .limit(1);
 
     if (existingAssetType.length > 0) {
@@ -105,7 +105,7 @@ export async function POST(request: NextRequest) {
     const newAssetType = await db
       .insert(assetTypes)
       .values({
-        typeName: sanitizedTypeName,
+        name: sanitizedTypeName,
         description: sanitizedDescription,
         createdAt: new Date().toISOString(),
       })
@@ -168,7 +168,7 @@ export async function PUT(request: NextRequest) {
       const duplicateCheck = await db
         .select()
         .from(assetTypes)
-        .where(eq(assetTypes.typeName, sanitizedTypeName))
+        .where(eq(assetTypes.name, sanitizedTypeName))
         .limit(1);
 
       if (duplicateCheck.length > 0 && duplicateCheck[0].id !== parseInt(id)) {
@@ -178,7 +178,7 @@ export async function PUT(request: NextRequest) {
         );
       }
 
-      updates.typeName = sanitizedTypeName;
+      updates.name = sanitizedTypeName;
     }
 
     if (description !== undefined) {
