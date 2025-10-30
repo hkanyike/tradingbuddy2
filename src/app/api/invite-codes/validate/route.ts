@@ -69,15 +69,18 @@ export async function POST(request: NextRequest) {
 
     // Check if code has expired
     const now = new Date();
-    if (inviteCode.expiresAt && inviteCode.expiresAt <= now) {
-      return NextResponse.json(
-        {
-          valid: false,
-          reason: 'CODE_EXPIRED',
-          message: 'This invite code has expired',
-        },
-        { status: 400 }
-      );
+    if (inviteCode.expiresAt) {
+      const expiresAtDate = new Date(inviteCode.expiresAt);
+      if (!isNaN(expiresAtDate.getTime()) && expiresAtDate <= now) {
+        return NextResponse.json(
+          {
+            valid: false,
+            reason: 'CODE_EXPIRED',
+            message: 'This invite code has expired',
+          },
+          { status: 400 }
+        );
+      }
     }
 
     // Check if code has remaining uses
