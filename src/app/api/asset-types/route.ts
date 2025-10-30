@@ -108,6 +108,7 @@ export async function POST(request: NextRequest) {
         name: sanitizedTypeName,
         description: sanitizedDescription,
         createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
       })
       .returning();
 
