@@ -219,7 +219,7 @@ export async function POST(request: NextRequest) {
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
         initialCapital: parseFloat(initialCapital),
-        configuration: configJson,
+        parameters: JSON.stringify(configJson),
         status: finalStatus,
         createdAt: new Date().toISOString(),
       })
