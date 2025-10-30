@@ -8,51 +8,52 @@ async function main() {
     const existingSymbols = new Set(existingAssets.map(a => a.symbol));
     
     // Define all assets with exact specifications
+    const now = new Date().toISOString();
     const allAssets = [
         // Tech Giants (assetTypeId: 1)
-        { symbol: 'AAPL', name: 'Apple Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 11, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'MSFT', name: 'Microsoft Corporation', assetTypeId: 1, sector: 'Technology', liquidityRank: 12, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'GOOGL', name: 'Alphabet Inc. Class A', assetTypeId: 1, sector: 'Technology', liquidityRank: 15, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'AMZN', name: 'Amazon.com Inc.', assetTypeId: 1, sector: 'Consumer Cyclical', liquidityRank: 17, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'META', name: 'Meta Platforms Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 18, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'NVDA', name: 'NVIDIA Corporation', assetTypeId: 1, sector: 'Technology', liquidityRank: 13, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'TSLA', name: 'Tesla Inc.', assetTypeId: 1, sector: 'Automotive', liquidityRank: 19, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'NFLX', name: 'Netflix Inc.', assetTypeId: 1, sector: 'Communication Services', liquidityRank: 34, isActive: true, createdAt: new Date().toISOString() },
+        { symbol: 'AAPL', name: 'Apple Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'MSFT', name: 'Microsoft Corporation', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'GOOGL', name: 'Alphabet Inc. Class A', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'AMZN', name: 'Amazon.com Inc.', assetTypeId: 1, sector: 'Consumer Cyclical', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'META', name: 'Meta Platforms Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'NVDA', name: 'NVIDIA Corporation', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'TSLA', name: 'Tesla Inc.', assetTypeId: 1, sector: 'Automotive', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'NFLX', name: 'Netflix Inc.', assetTypeId: 1, sector: 'Communication Services', isActive: true, createdAt: now, updatedAt: now },
         
         // High-Volume Meme/Growth Stocks (assetTypeId: 1)
-        { symbol: 'PLTR', name: 'Palantir Technologies Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 45, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'AMD', name: 'Advanced Micro Devices Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 14, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'INTC', name: 'Intel Corporation', assetTypeId: 1, sector: 'Technology', liquidityRank: 36, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'BABA', name: 'Alibaba Group Holding Ltd', assetTypeId: 1, sector: 'Technology', liquidityRank: 48, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'NIO', name: 'NIO Inc.', assetTypeId: 1, sector: 'Automotive', liquidityRank: 65, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'RIVN', name: 'Rivian Automotive Inc.', assetTypeId: 1, sector: 'Automotive', liquidityRank: 72, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'LCID', name: 'Lucid Group Inc.', assetTypeId: 1, sector: 'Automotive', liquidityRank: 85, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'SOFI', name: 'SoFi Technologies Inc.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 78, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'HOOD', name: 'Robinhood Markets Inc.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 82, isActive: true, createdAt: new Date().toISOString() },
+        { symbol: 'PLTR', name: 'Palantir Technologies Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'AMD', name: 'Advanced Micro Devices Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'INTC', name: 'Intel Corporation', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'BABA', name: 'Alibaba Group Holding Ltd', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'NIO', name: 'NIO Inc.', assetTypeId: 1, sector: 'Automotive', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'RIVN', name: 'Rivian Automotive Inc.', assetTypeId: 1, sector: 'Automotive', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'LCID', name: 'Lucid Group Inc.', assetTypeId: 1, sector: 'Automotive', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'SOFI', name: 'SoFi Technologies Inc.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'HOOD', name: 'Robinhood Markets Inc.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
         
         // Finance Stocks (assetTypeId: 1)
-        { symbol: 'JPM', name: 'JPMorgan Chase & Co.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 21, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'BAC', name: 'Bank of America Corp.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 28, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'GS', name: 'Goldman Sachs Group Inc.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 42, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'WFC', name: 'Wells Fargo & Company', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 38, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'MS', name: 'Morgan Stanley', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 46, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'C', name: 'Citigroup Inc.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 44, isActive: true, createdAt: new Date().toISOString() },
+        { symbol: 'JPM', name: 'JPMorgan Chase & Co.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'BAC', name: 'Bank of America Corp.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'GS', name: 'Goldman Sachs Group Inc.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'WFC', name: 'Wells Fargo & Company', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'MS', name: 'Morgan Stanley', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'C', name: 'Citigroup Inc.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
         
         // Other High-Volume Stocks (assetTypeId: 1)
-        { symbol: 'DIS', name: 'The Walt Disney Company', assetTypeId: 1, sector: 'Communication Services', liquidityRank: 35, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'BA', name: 'The Boeing Company', assetTypeId: 1, sector: 'Industrials', liquidityRank: 52, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'UBER', name: 'Uber Technologies Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 58, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'LYFT', name: 'Lyft Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 95, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'SNAP', name: 'Snap Inc.', assetTypeId: 1, sector: 'Technology', liquidityRank: 88, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'TWTR', name: 'Twitter/X Corp.', assetTypeId: 1, sector: 'Technology', liquidityRank: 120, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'SQ', name: 'Block Inc.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 68, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'PYPL', name: 'PayPal Holdings Inc.', assetTypeId: 1, sector: 'Financial Services', liquidityRank: 62, isActive: true, createdAt: new Date().toISOString() },
+        { symbol: 'DIS', name: 'The Walt Disney Company', assetTypeId: 1, sector: 'Communication Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'BA', name: 'The Boeing Company', assetTypeId: 1, sector: 'Industrials', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'UBER', name: 'Uber Technologies Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'LYFT', name: 'Lyft Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'SNAP', name: 'Snap Inc.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'TWTR', name: 'Twitter/X Corp.', assetTypeId: 1, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'SQ', name: 'Block Inc.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'PYPL', name: 'PayPal Holdings Inc.', assetTypeId: 1, sector: 'Financial Services', isActive: true, createdAt: now, updatedAt: now },
         
         // Major ETFs (assetTypeId: 2)
-        { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', assetTypeId: 2, sector: 'Market Index', liquidityRank: 5, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'QQQ', name: 'Invesco QQQ Trust', assetTypeId: 2, sector: 'Technology', liquidityRank: 6, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'DIA', name: 'SPDR Dow Jones Industrial Average ETF', assetTypeId: 2, sector: 'Market Index', liquidityRank: 8, isActive: true, createdAt: new Date().toISOString() },
-        { symbol: 'IWM', name: 'iShares Russell 2000 ETF', assetTypeId: 2, sector: 'Small Cap', liquidityRank: 7, isActive: true, createdAt: new Date().toISOString() },
+        { symbol: 'SPY', name: 'SPDR S&P 500 ETF Trust', assetTypeId: 2, sector: 'Market Index', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'QQQ', name: 'Invesco QQQ Trust', assetTypeId: 2, sector: 'Technology', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'DIA', name: 'SPDR Dow Jones Industrial Average ETF', assetTypeId: 2, sector: 'Market Index', isActive: true, createdAt: now, updatedAt: now },
+        { symbol: 'IWM', name: 'iShares Russell 2000 ETF', assetTypeId: 2, sector: 'Small Cap', isActive: true, createdAt: now, updatedAt: now },
     ];
     
     // Filter out assets that already exist

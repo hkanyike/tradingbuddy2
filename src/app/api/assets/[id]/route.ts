@@ -78,12 +78,7 @@ export async function PUT(
       updateData.sector = body.sector ? body.sector.trim() : null
     }
 
-    if (body.liquidityRank !== undefined) {
-      if (body.liquidityRank !== null && (typeof body.liquidityRank !== 'number' || isNaN(body.liquidityRank))) {
-        return NextResponse.json({ error: 'Liquidity rank must be a valid number or null', code: 'INVALID_LIQUIDITY_RANK' }, { status: 400 })
-      }
-      updateData.liquidityRank = body.liquidityRank
-    }
+    // liquidityRank is not part of schema; ignore if provided
 
     if (body.isActive !== undefined) {
       if (typeof body.isActive !== 'boolean') {

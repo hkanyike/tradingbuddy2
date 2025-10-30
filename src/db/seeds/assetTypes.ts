@@ -2,27 +2,12 @@ import { db } from '@/db';
 import { assetTypes } from '@/db/schema';
 
 async function main() {
+    const now = new Date().toISOString();
     const sampleAssetTypes = [
-        {
-            typeName: 'Stock',
-            description: 'Common stocks and equities',
-            createdAt: new Date().toISOString(),
-        },
-        {
-            typeName: 'ETF',
-            description: 'Exchange traded funds',
-            createdAt: new Date().toISOString(),
-        },
-        {
-            typeName: 'Index',
-            description: 'Market indices',
-            createdAt: new Date().toISOString(),
-        },
-        {
-            typeName: 'Option',
-            description: 'Options contracts',
-            createdAt: new Date().toISOString(),
-        }
+        { name: 'Stock', description: 'Common stocks and equities', createdAt: now, updatedAt: now },
+        { name: 'ETF', description: 'Exchange traded funds', createdAt: now, updatedAt: now },
+        { name: 'Index', description: 'Market indices', createdAt: now, updatedAt: now },
+        { name: 'Option', description: 'Options contracts', createdAt: now, updatedAt: now },
     ];
 
     await db.insert(assetTypes).values(sampleAssetTypes);
