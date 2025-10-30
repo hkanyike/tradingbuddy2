@@ -111,20 +111,20 @@ export async function PUT(
       updates.brokerName = requestBody.brokerName.trim();
     }
 
-    if (requestBody.apiKeyEncrypted !== undefined) {
-      updates.apiKeyEncrypted = requestBody.apiKeyEncrypted;
+    if (requestBody.apiKeyEncrypted !== undefined || requestBody.apiKey !== undefined) {
+      updates.apiKey = (requestBody.apiKey ?? requestBody.apiKeyEncrypted ?? '').toString();
     }
 
-    if (requestBody.isPaperTrading !== undefined) {
-      updates.isPaperTrading = Boolean(requestBody.isPaperTrading);
+    if (requestBody.apiSecret !== undefined) {
+      updates.apiSecret = requestBody.apiSecret.toString();
     }
 
-    if (requestBody.isConnected !== undefined) {
-      updates.isConnected = Boolean(requestBody.isConnected);
+    if (requestBody.isActive !== undefined) {
+      updates.isActive = Boolean(requestBody.isActive);
     }
 
-    if (requestBody.lastConnectedAt !== undefined) {
-      updates.lastConnectedAt = requestBody.lastConnectedAt;
+    if (requestBody.lastSyncAt !== undefined) {
+      updates.lastSyncAt = requestBody.lastSyncAt;
     }
 
     updates.updatedAt = new Date().toISOString();

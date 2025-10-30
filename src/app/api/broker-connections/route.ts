@@ -83,7 +83,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { brokerName, apiKeyEncrypted, isPaperTrading, isConnected, lastConnectedAt } = body;
+    const { brokerName, apiKey, apiSecret, apiKeyEncrypted, isActive, lastSyncAt } = body;
 
     // Validate required fields
     if (!brokerName) {
@@ -94,17 +94,28 @@ export async function POST(request: NextRequest) {
     }
 
     // Sanitize inputs
-    const sanitizedBrokerName = brokerName.trim();
+    const sanitizedBrokerName = String(brokerName).trim();
+
+    // Resolve credentials; allow legacy apiKeyEncrypted alias for apiKey
+    const resolvedApiKey = (apiKey ?? apiKeyEncrypted ?? '').toString();
+    const resolvedApiSecret = (apiSecret ?? '').toString();
+
+    if (!resolvedApiKey || !resolvedApiSecret) {
+      return NextResponse.json({
+        error: 'apiKey and apiSecret are required',
+        code: 'MISSING_CREDENTIALS'
+      }, { status: 400 });
+    }
 
     // Prepare insert data with authenticated user's text ID
     const now = new Date().toISOString();
     const insertData = {
       userId: user.id,
       brokerName: sanitizedBrokerName,
-      apiKeyEncrypted: apiKeyEncrypted || null,
-      isPaperTrading: isPaperTrading !== undefined ? isPaperTrading : true,
-      isConnected: isConnected !== undefined ? isConnected : false,
-      lastConnectedAt: lastConnectedAt || null,
+      apiKey: resolvedApiKey,
+      apiSecret: resolvedApiSecret,
+      isActive: isActive !== undefined ? Boolean(isActive) : true,
+      lastSyncAt: lastSyncAt || null,
       createdAt: now,
       updatedAt: now,
     };
@@ -177,19 +188,19 @@ export async function PUT(request: NextRequest) {
     };
 
     if (body.brokerName !== undefined) {
-      updateData.brokerName = body.brokerName.trim();
+      updateData.brokerName = String(body.brokerName).trim();
     }
-    if (body.apiKeyEncrypted !== undefined) {
-      updateData.apiKeyEncrypted = body.apiKeyEncrypted;
+    if (body.apiKeyEncrypted !== undefined || body.apiKey !== undefined) {
+      updateData.apiKey = (body.apiKey ?? body.apiKeyEncrypted ?? '').toString();
     }
-    if (body.isPaperTrading !== undefined) {
-      updateData.isPaperTrading = body.isPaperTrading;
+    if (body.apiSecret !== undefined) {
+      updateData.apiSecret = body.apiSecret.toString();
     }
-    if (body.isConnected !== undefined) {
-      updateData.isConnected = body.isConnected;
+    if (body.isActive !== undefined) {
+      updateData.isActive = Boolean(body.isActive);
     }
-    if (body.lastConnectedAt !== undefined) {
-      updateData.lastConnectedAt = body.lastConnectedAt;
+    if (body.lastSyncAt !== undefined) {
+      updateData.lastSyncAt = body.lastSyncAt;
     }
 
     const updated = await db.update(brokerConnections)
