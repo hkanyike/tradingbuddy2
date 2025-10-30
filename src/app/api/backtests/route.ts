@@ -192,16 +192,9 @@ export async function POST(request: NextRequest) {
     }
 
     if (modelId) {
-      if (isNaN(parseInt(modelId))) {
-        return NextResponse.json({ 
-          error: "Invalid model ID format",
-          code: "INVALID_MODEL_ID" 
-        }, { status: 400 });
-      }
-
       const model = await db.select()
         .from(mlModels)
-        .where(eq(mlModels.id, parseInt(modelId)))
+        .where(eq(mlModels.id, String(modelId)))
         .limit(1);
 
       if (model.length === 0) {
@@ -221,7 +214,7 @@ export async function POST(request: NextRequest) {
       .values({
         name: name.trim(),
         strategyId: parseInt(strategyId),
-        modelId: modelId ? parseInt(modelId) : null,
+        modelId: modelId && !isNaN(parseInt(modelId)) ? parseInt(modelId) : null,
         userId: user.id,
         startDate: startDateTime.toISOString(),
         endDate: endDateTime.toISOString(),
