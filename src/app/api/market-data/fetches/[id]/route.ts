@@ -34,12 +34,24 @@ export async function GET(
 
     const fetchRecord = record[0];
 
-    // Parse symbols JSON string for better client readability
-    let parsedSymbols;
-    try {
-      parsedSymbols = JSON.parse(fetchRecord.symbols);
-    } catch {
-      parsedSymbols = fetchRecord.symbols;
+    // Parse symbols for better client readability (supports JSON, CSV, or single string; null-safe)
+    let parsedSymbols: unknown = null;
+    const rawSymbols = fetchRecord.symbols;
+    if (typeof rawSymbols === 'string') {
+      const trimmed = rawSymbols.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+          parsedSymbols = JSON.parse(trimmed);
+        } catch {
+          parsedSymbols = trimmed;
+        }
+      } else if (trimmed.includes(',')) {
+        parsedSymbols = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        parsedSymbols = trimmed;
+      }
+    } else {
+      parsedSymbols = null;
     }
 
     return NextResponse.json({
@@ -165,12 +177,24 @@ export async function PUT(
       );
     }
 
-    // Parse symbols for response
-    let parsedSymbols;
-    try {
-      parsedSymbols = JSON.parse(updated[0].symbols);
-    } catch {
-      parsedSymbols = updated[0].symbols;
+    // Parse symbols for response (null-safe)
+    let parsedSymbols: unknown = null;
+    const rawSymbols = updated[0].symbols;
+    if (typeof rawSymbols === 'string') {
+      const trimmed = rawSymbols.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+          parsedSymbols = JSON.parse(trimmed);
+        } catch {
+          parsedSymbols = trimmed;
+        }
+      } else if (trimmed.includes(',')) {
+        parsedSymbols = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        parsedSymbols = trimmed;
+      }
+    } else {
+      parsedSymbols = null;
     }
 
     return NextResponse.json({
@@ -228,12 +252,24 @@ export async function DELETE(
       );
     }
 
-    // Parse symbols for response
-    let parsedSymbols;
-    try {
-      parsedSymbols = JSON.parse(deleted[0].symbols);
-    } catch {
-      parsedSymbols = deleted[0].symbols;
+    // Parse symbols for response (null-safe)
+    let parsedSymbols: unknown = null;
+    const rawSymbols = deleted[0].symbols;
+    if (typeof rawSymbols === 'string') {
+      const trimmed = rawSymbols.trim();
+      if (trimmed.startsWith('[') || trimmed.startsWith('{')) {
+        try {
+          parsedSymbols = JSON.parse(trimmed);
+        } catch {
+          parsedSymbols = trimmed;
+        }
+      } else if (trimmed.includes(',')) {
+        parsedSymbols = trimmed.split(',').map(s => s.trim()).filter(Boolean);
+      } else {
+        parsedSymbols = trimmed;
+      }
+    } else {
+      parsedSymbols = null;
     }
 
     return NextResponse.json({
