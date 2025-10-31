@@ -15,15 +15,12 @@ export async function GET(request: NextRequest) {
       .select()
       .from(marketSignals)
       .where(
-        and(
-          eq(marketSignals.isExecuted, false),
-          or(
-            gt(marketSignals.validUntil, currentTimestamp),
-            isNull(marketSignals.validUntil)
-          )
+        or(
+          gt(marketSignals.expiresAt, currentTimestamp),
+          isNull(marketSignals.expiresAt)
         )
       )
-      .orderBy(desc(marketSignals.confidenceScore))
+      .orderBy(desc(marketSignals.confidence))
       .limit(limit)
       .offset(offset);
 
