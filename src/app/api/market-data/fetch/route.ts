@@ -74,9 +74,10 @@ export async function POST(request: NextRequest) {
     // Create fetch job record
     const newJob = await db.insert(marketDataFetches)
       .values({
+        createdAt: new Date().toISOString(),
         fetchType: fetchType as string,
-        symbols: JSON.stringify(normalizedSymbols),
-        status: 'pending',
+        symbols: normalizedSymbols.join(','),
+        status: 'in_progress',
         recordsFetched: 0,
         errorMessage: null,
         startedAt: new Date().toISOString(),

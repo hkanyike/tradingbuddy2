@@ -37,3 +37,5 @@ ALTER TABLE market_data_fetches ADD COLUMN started_at TEXT;
 ALTER TABLE market_data_fetches ADD COLUMN completed_at TEXT;
 ALTER TABLE market_data_fetches ADD COLUMN error_message TEXT;
 
+
+
