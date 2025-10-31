@@ -1456,6 +1456,15 @@ export default function DashboardPage() {
                   <Sparkles className="h-4 w-4 mr-1.5" />
                   AI Scanner
                 </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/contract-analyzer')}
+                >
+                  <Target className="h-4 w-4 mr-1.5" />
+                  Contract Analyzer
+                </Button>
 
                 {/* Help Dropdown */}
                 <DropdownMenu>
@@ -1550,6 +1559,12 @@ export default function DashboardPage() {
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         <Sparkles className="h-4 w-4 mr-2" />
                         AI Scanner
+                      </Button>
+                    </Link>
+                    <Link href="/contract-analyzer" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        <Target className="h-4 w-4 mr-2" />
+                        Contract Analyzer
                       </Button>
                     </Link>
                     <Link href="/help" onClick={() => setMobileMenuOpen(false)}>
