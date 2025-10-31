@@ -219,6 +219,9 @@ export default function DashboardPage() {
   const { data: session, status } = useSession();
   const isPending = status === 'loading';
   const router = useRouter();
+  
+  // Add error boundary state
+  const [hasError, setHasError] = useState(false);
 
   const [positions, setPositions] = useState<Position[]>([]);
   const [riskMetrics, setRiskMetrics] = useState<RiskMetric | null>(null);
@@ -285,6 +288,19 @@ export default function DashboardPage() {
 
   // Get userId from session - no fallback to prevent data leakage
   const userId = session?.user?.id;
+  
+  // Helper function to safely format numbers
+  const safeToFixed = (value: any, decimals: number = 2): string => {
+    try {
+      const num = Number(value);
+      if (isNaN(num) || !isFinite(num)) {
+        return '0.' + '0'.repeat(decimals);
+      }
+      return num.toFixed(decimals);
+    } catch {
+      return '0.' + '0'.repeat(decimals);
+    }
+  };
 
   useEffect(() => {
     if (!isPending && !session?.user) {
@@ -292,6 +308,18 @@ export default function DashboardPage() {
       return;
     }
   }, [session, isPending, router]);
+  
+  // Handle errors gracefully
+  useEffect(() => {
+    const handleError = (event: ErrorEvent) => {
+      console.error('Dashboard error:', event.error);
+      setHasError(true);
+      toast.error('An error occurred. Please refresh the page.');
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
+  }, []);
 
   // Load initial data when session is ready (only once)
   useEffect(() => {
@@ -809,6 +837,7 @@ export default function DashboardPage() {
     } catch (error) {
       console.error("Error loading dashboard data:", error);
       toast.error("Failed to load dashboard data. Please try again.");
+      setHasError(false); // Don't set to true, just log the error
       if (isLoading) {
         setIsLoading(false);
       }
@@ -1152,6 +1181,30 @@ export default function DashboardPage() {
   // Show loading page while session is loading
   if (isPending) {
     return <LoadingPage text="Loading dashboard..." />;
+  }
+  
+  // Show error state if something went wrong
+  if (hasError) {
+    return (
+      <div className="flex h-screen items-center justify-center">
+        <Card className="max-w-md p-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Something Went Wrong
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              We encountered an error loading the dashboard. Please try refreshing the page.
+            </p>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Refresh Page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
   }
 
   // Redirect to sign-in if not authenticated
@@ -1736,7 +1789,7 @@ export default function DashboardPage() {
                         <div className="text-xs text-muted-foreground">Avg Q-Value</div>
                       </div>
                       <div className={`text-xl font-bold ${(rlStats.avgQValue ?? 0) >= 0 ? 'text-green-600 dark:text-green-500' : 'text-red-600 dark:text-red-500'}`}>
-                        {(rlStats.avgQValue ?? 0) >= 0 ? '+' : ''}{(rlStats.avgQValue ?? 0).toFixed(2)}
+                        {(rlStats.avgQValue ?? 0) >= 0 ? '+' : ''}{safeToFixed(rlStats.avgQValue ?? 0, 2)}
                       </div>
                     </div>
                   </div>
@@ -1750,7 +1803,7 @@ export default function DashboardPage() {
                         </div>
                         <div className="text-xs text-muted-foreground">
                           The RL agent learns from every trade outcome, improving position sizing and timing decisions. 
-                          Exploration rate: {((rlStats.epsilon ?? 0) * 100).toFixed(1)}%
+                          Exploration rate: {safeToFixed((rlStats.epsilon ?? 0) * 100, 1)}%
                         </div>
                       </div>
                     </div>
