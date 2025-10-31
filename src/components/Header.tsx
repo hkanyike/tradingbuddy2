@@ -99,6 +99,9 @@ export const Header = () => {
             </div>
           ) : (
             <div className="flex items-center gap-2">
+              <Link href="/help">
+                <Button variant="ghost">Help</Button>
+              </Link>
               <Link href="/sign-in">
                 <Button variant="ghost">Sign In</Button>
               </Link>
