@@ -1448,6 +1448,24 @@ export default function DashboardPage() {
                   variant="ghost" 
                   size="sm" 
                   className="hover:bg-secondary/80"
+                  onClick={() => router.push('/ai-scanner')}
+                >
+                  <Sparkles className="h-4 w-4 mr-1.5" />
+                  AI Scanner
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
+                  onClick={() => router.push('/help')}
+                >
+                  <Info className="h-4 w-4 mr-1.5" />
+                  Help
+                </Button>
+                <Button 
+                  variant="ghost" 
+                  size="sm" 
+                  className="hover:bg-secondary/80"
                   onClick={() => router.push('/settings')}
                 >
                   <SettingsIcon className="h-4 w-4 mr-1.5" />
@@ -1516,6 +1534,18 @@ export default function DashboardPage() {
                       <Button variant="ghost" size="sm" className="w-full justify-start">
                         <Newspaper className="h-4 w-4 mr-2" />
                         News
+                      </Button>
+                    </Link>
+                    <Link href="/ai-scanner" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        <Sparkles className="h-4 w-4 mr-2" />
+                        AI Scanner
+                      </Button>
+                    </Link>
+                    <Link href="/help" onClick={() => setMobileMenuOpen(false)}>
+                      <Button variant="ghost" size="sm" className="w-full justify-start">
+                        <Info className="h-4 w-4 mr-2" />
+                        Help
                       </Button>
                     </Link>
                     <Link href="/settings" onClick={() => setMobileMenuOpen(false)}>
