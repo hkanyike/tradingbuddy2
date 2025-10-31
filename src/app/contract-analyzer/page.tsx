@@ -216,6 +216,50 @@ export default function ContractAnalyzerPage() {
         {/* Analysis Results */}
         {analysis && (
           <div className="space-y-6">
+            {/* Data Source Indicator */}
+            <Card className="border-blue-500/20 bg-blue-500/5">
+              <CardHeader>
+                <CardTitle className="text-sm flex items-center gap-2">
+                  <Info className="h-4 w-4 text-blue-500" />
+                  Data Source Information
+                </CardTitle>
+              </CardHeader>
+              <CardContent>
+                <div className="grid grid-cols-2 md:grid-cols-5 gap-3 text-sm">
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xs text-muted-foreground mb-1">Stock Price</div>
+                    <Badge variant={analysis.dataSource.stockPrice === 'alpaca-live' ? 'default' : 'secondary'}>
+                      {analysis.dataSource.stockPrice === 'alpaca-live' ? '🟢 Live' : '⚠️ Estimated'}
+                    </Badge>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xs text-muted-foreground mb-1">Contract Price</div>
+                    <Badge variant={analysis.dataSource.contractPrice === 'alpaca-live' ? 'default' : 'secondary'}>
+                      {analysis.dataSource.contractPrice === 'alpaca-live' ? '🟢 Live' : '⚠️ Estimated'}
+                    </Badge>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xs text-muted-foreground mb-1">Greeks</div>
+                    <Badge variant={analysis.dataSource.greeks === 'alpaca-live' ? 'default' : 'secondary'}>
+                      {analysis.dataSource.greeks === 'alpaca-live' ? '🟢 Live' : '📐 Calculated'}
+                    </Badge>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xs text-muted-foreground mb-1">IV</div>
+                    <Badge variant={analysis.dataSource.impliedVolatility === 'alpaca-live' ? 'default' : 'secondary'}>
+                      {analysis.dataSource.impliedVolatility === 'alpaca-live' ? '🟢 Live' : '⚠️ Estimated'}
+                    </Badge>
+                  </div>
+                  <div className="p-2 bg-muted/50 rounded">
+                    <div className="text-xs text-muted-foreground mb-1">ML Prediction</div>
+                    <Badge variant="secondary">
+                      {analysis.dataSource.mlPrediction === 'trained-model' ? '🤖 Model' : '🧪 Simulated'}
+                    </Badge>
+                  </div>
+                </div>
+              </CardContent>
+            </Card>
+
             {/* AI Summary */}
             <Card className="border-primary/20 bg-gradient-to-br from-primary/5 to-card">
               <CardHeader>

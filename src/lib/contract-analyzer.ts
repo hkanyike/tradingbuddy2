@@ -1,6 +1,7 @@
 // AI-powered individual contract analysis
 import { featureEngine } from './ml/feature-engine';
 import { modelService } from './ml/model-service';
+import { alpacaOptionsData, getDataSourceInfo, type DataSourceInfo } from './alpaca-options-data';
 
 export interface ContractAnalysisRequest {
   symbol: string;
@@ -20,6 +21,8 @@ export interface ContractAnalysisResult {
     currentPrice: number;
     quantity: number;
   };
+  
+  dataSource: DataSourceInfo;
   
   stockAnalysis: {
     currentPrice: number;
@@ -100,18 +103,65 @@ class ContractAnalyzer {
     // Validate inputs
     this.validateRequest(request);
     
-    // Get current stock price
-    const stockPrice = this.getStockPrice(request.symbol);
+    // Try to get real-time data from Alpaca first
+    const alpacaConfigured = alpacaOptionsData.isConfigured();
+    console.log(`Alpaca configured: ${alpacaConfigured}`);
     
-    // Calculate contract price if not provided
-    const contractPrice = request.contractPrice || this.estimateContractPrice(
-      stockPrice,
-      request.strikePrice,
-      request.expirationDate,
-      request.optionType
-    );
+    // Get current stock price (try Alpaca, fall back to estimate)
+    let stockPrice: number;
+    const alpacaQuote = await alpacaOptionsData.getStockQuote(request.symbol);
+    if (alpacaQuote) {
+      stockPrice = alpacaQuote.price;
+      console.log(`✅ Using live Alpaca price for ${request.symbol}: $${stockPrice}`);
+    } else {
+      stockPrice = this.getStockPrice(request.symbol);
+      console.log(`⚠️ Using estimated price for ${request.symbol}: $${stockPrice}`);
+    }
+    
+    // Try to get real contract data from Alpaca
+    let contractPrice: number;
+    let realGreeks: any = null;
+    let realIV: number | null = null;
+    
+    if (alpacaConfigured) {
+      const alpacaContract = await alpacaOptionsData.getSpecificContract(
+        request.symbol,
+        request.strikePrice,
+        request.expirationDate,
+        request.optionType
+      );
+      
+      if (alpacaContract) {
+        contractPrice = alpacaContract.lastPrice;
+        realGreeks = {
+          delta: alpacaContract.delta,
+          gamma: alpacaContract.gamma,
+          theta: alpacaContract.theta,
+          vega: alpacaContract.vega
+        };
+        realIV = alpacaContract.impliedVolatility;
+        console.log(`✅ Using live Alpaca contract data: $${contractPrice}`);
+      } else {
+        contractPrice = request.contractPrice || this.estimateContractPrice(
+          stockPrice,
+          request.strikePrice,
+          request.expirationDate,
+          request.optionType
+        );
+        console.log(`⚠️ Contract not found in Alpaca, using estimated price: $${contractPrice}`);
+      }
+    } else {
+      contractPrice = request.contractPrice || this.estimateContractPrice(
+        stockPrice,
+        request.strikePrice,
+        request.expirationDate,
+        request.optionType
+      );
+      console.log(`⚠️ Alpaca not configured, using estimated price: $${contractPrice}`);
+    }
     
     const quantity = request.quantity || 1;
+    const dataSource = getDataSourceInfo(alpacaConfigured);
     
     // Perform analysis
     const stockAnalysis = await this.analyzeStock(request.symbol, request.expirationDate);
@@ -131,7 +181,7 @@ class ContractAnalyzer {
       request.optionType,
       quantity
     );
-    const greeks = this.calculateGreeks(
+    const greeks = realGreeks || this.calculateGreeks(
       stockPrice,
       request.strikePrice,
       request.expirationDate,
@@ -166,6 +216,7 @@ class ContractAnalyzer {
         currentPrice: contractPrice,
         quantity
       },
+      dataSource,
       stockAnalysis,
       probabilities,
       returns,
