@@ -10,8 +10,8 @@ async function main() {
             portfolioBalance: 100000,
             riskTolerance: 'moderate',
             executionMode: 'manual',
-      createdAt: new Date(),
-      updatedAt: new Date(),
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
         }
     ];
 

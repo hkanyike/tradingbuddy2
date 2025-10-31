@@ -287,11 +287,16 @@ export class FeatureEngine {
     const variance = data.reduce((acc, d) => acc + Math.pow(d.close - sma, 2), 0) / data.length;
     const std = Math.sqrt(variance);
     
+    const bb_upper = sma + (std * stdDev);
+    const bb_lower = sma - (std * stdDev);
+    const bb_width = (std * stdDev * 2) / sma;
+    const bb_position = (data[data.length - 1].close - bb_lower) / (bb_upper - bb_lower);
+    
     return {
-      bb_upper: sma + (std * stdDev),
-      bb_lower: sma - (std * stdDev),
-      bb_width: (std * stdDev * 2) / sma,
-      bb_position: (data[data.length - 1].close - bb_lower) / (bb_upper - bb_lower),
+      bb_upper,
+      bb_lower,
+      bb_width,
+      bb_position,
     };
   }
 

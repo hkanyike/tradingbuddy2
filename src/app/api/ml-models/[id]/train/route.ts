@@ -20,7 +20,7 @@ export async function POST(
 
     // Extract and validate model ID from URL params
     const { id: modelId } = await params;
-    if (!modelId || isNaN(parseInt(modelId))) {
+    if (!modelId) {
       return NextResponse.json(
         { error: 'Valid model ID is required', code: 'INVALID_MODEL_ID' },
         { status: 400 }
@@ -116,11 +116,11 @@ export async function POST(
       );
     }
 
-    // Verify ML model exists
+    // Verify ML model exists (ID is string in schema)
     const model = await db
       .select()
       .from(mlModels)
-      .where(eq(mlModels.id, parseInt(modelId)))
+      .where(eq(mlModels.id, modelId))
       .limit(1);
 
     if (model.length === 0) {
@@ -131,21 +131,27 @@ export async function POST(
     }
 
     // Create new training run record
+    const runId = `${modelId}-${Date.now()}`;
     const newTrainingRun = await db
       .insert(mlTrainingRuns)
       .values({
-        modelId: parseInt(modelId),
-        userId: user.id,
-        datasetStartDate: datasetStartDate,
-        datasetEndDate: datasetEndDate,
-        trainingSamples: trainingSamples,
-        validationSamples: validationSamples,
+        id: runId,
+        modelId: modelId,
+        experimentId: `exp-${Date.now()}`,
+        runName: `Training run ${new Date().toISOString()}`,
         status: 'running',
-        trainingMetrics: JSON.stringify({}),
-        validationMetrics: JSON.stringify({}),
-        trainingDurationSeconds: 0,
+        startTime: Date.now(),
+        endTime: null,
+        metrics: JSON.stringify({}),
+        parameters: JSON.stringify({
+          datasetStartDate,
+          datasetEndDate,
+          trainingSamples,
+          validationSamples,
+        }),
+        tags: JSON.stringify({ userId: user.id }),
+        artifacts: JSON.stringify([]),
         createdAt: new Date().toISOString(),
-        completedAt: null
       })
       .returning();
 

@@ -103,7 +103,7 @@ export class ModelPersistence {
       const dbModel = result[0];
       
       // Load model data
-      const modelData = await this.loadModelData(dbModel.modelPath);
+      const modelData = dbModel.modelPath ? await this.loadModelData(dbModel.modelPath) : null;
       
       // Reconstruct TrainedModel object
       const model: TrainedModel = {
@@ -117,15 +117,15 @@ export class ModelPersistence {
           features: [], // Would be stored separately
           target: '', // Would be stored separately
           hyperparameters: JSON.parse(dbModel.hyperparameters || '{}'),
-          trainingDataSize: dbModel.trainingDataSize,
+          trainingDataSize: dbModel.trainingDataSize || 0,
           validationSplit: 0.2,
           testSplit: 0.1
         },
         metrics: JSON.parse(dbModel.metrics || '{}'),
-        trainingDataSize: dbModel.trainingDataSize,
+        trainingDataSize: dbModel.trainingDataSize || 0,
         trainedAt: dbModel.trainedAt,
         status: dbModel.status as any,
-        modelPath: dbModel.modelPath,
+        modelPath: dbModel.modelPath || undefined,
         featureImportance: dbModel.featureImportance ? JSON.parse(dbModel.featureImportance) : undefined
       };
 
@@ -163,15 +163,15 @@ export class ModelPersistence {
             features: [],
             target: '',
             hyperparameters: JSON.parse(dbModel.hyperparameters || '{}'),
-            trainingDataSize: dbModel.trainingDataSize,
+            trainingDataSize: dbModel.trainingDataSize || 0,
             validationSplit: 0.2,
             testSplit: 0.1
           },
           metrics: JSON.parse(dbModel.metrics || '{}'),
-          trainingDataSize: dbModel.trainingDataSize,
+          trainingDataSize: dbModel.trainingDataSize || 0,
           trainedAt: dbModel.trainedAt,
           status: dbModel.status as any,
-          modelPath: dbModel.modelPath,
+          modelPath: dbModel.modelPath || undefined,
           featureImportance: dbModel.featureImportance ? JSON.parse(dbModel.featureImportance) : undefined
         };
         
@@ -221,7 +221,7 @@ export class ModelPersistence {
         .where(eq(mlModels.id, modelId))
         .limit(1);
 
-      if (result.length > 0) {
+      if (result.length > 0 && result[0].modelPath) {
         // Delete model data file
         await this.deleteModelData(result[0].modelPath);
       }
@@ -263,15 +263,15 @@ export class ModelPersistence {
           features: [],
           target: '',
           hyperparameters: JSON.parse(dbModel.hyperparameters || '{}'),
-          trainingDataSize: dbModel.trainingDataSize,
+          trainingDataSize: dbModel.trainingDataSize || 0,
           validationSplit: 0.2,
           testSplit: 0.1
         },
         metrics: JSON.parse(dbModel.metrics || '{}'),
-        trainingDataSize: dbModel.trainingDataSize,
+        trainingDataSize: dbModel.trainingDataSize || 0,
         trainedAt: dbModel.trainedAt,
         status: dbModel.status as any,
-        modelPath: dbModel.modelPath,
+        modelPath: dbModel.modelPath || undefined,
         featureImportance: dbModel.featureImportance ? JSON.parse(dbModel.featureImportance) : undefined
       }));
     } catch (error) {

@@ -21,21 +21,20 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Prepare insert data with defaults
+    // Prepare insert data with defaults (matching schema fields)
+    const now = new Date().toISOString();
     const insertData = {
       userId: user.id,
-      totalExposure: body.totalExposure ?? 0,
-      netDelta: body.netDelta ?? 0,
-      netGamma: body.netGamma ?? 0,
-      netTheta: body.netTheta ?? 0,
-      netVega: body.netVega ?? 0,
-      portfolioHeat: body.portfolioHeat ?? 0,
-      maxDrawdown: body.maxDrawdown ?? 0,
+      portfolioValue: body.portfolioValue ?? 0,
+      totalPnl: body.totalPnl ?? 0,
       dailyPnl: body.dailyPnl ?? 0,
       sharpeRatio: body.sharpeRatio ?? null,
-      sortinoRatio: body.sortinoRatio ?? null,
-      winRate: body.winRate ?? null,
-      calculatedAt: new Date().toISOString()
+      maxDrawdown: body.maxDrawdown ?? null,
+      var95: body.var95 ?? null,
+      beta: body.beta ?? null,
+      volatility: body.volatility ?? null,
+      calculatedAt: now,
+      createdAt: now
     };
 
     const newRecord = await db.insert(riskMetrics)

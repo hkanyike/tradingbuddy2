@@ -12,7 +12,7 @@ export async function GET(
     const searchParams = request.nextUrl.searchParams;
 
     // Validate model ID
-    if (!modelId || isNaN(parseInt(modelId))) {
+    if (!modelId) {
       return NextResponse.json(
         { 
           error: 'Valid model ID is required',
@@ -22,12 +22,10 @@ export async function GET(
       );
     }
 
-    const parsedModelId = parseInt(modelId);
-
-    // Verify ML model exists
+    // Verify ML model exists (ID is string in schema)
     const model = await db.select()
       .from(mlModels)
-      .where(eq(mlModels.id, parsedModelId))
+      .where(eq(mlModels.id, modelId))
       .limit(1);
 
     if (model.length === 0) {
@@ -43,30 +41,14 @@ export async function GET(
     // Parse query parameters
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '50'), 200);
     const offset = parseInt(searchParams.get('offset') ?? '0');
-    const assetId = searchParams.get('assetId');
-    const predictionType = searchParams.get('predictionType');
+    const symbol = searchParams.get('symbol');
 
-    // Build where conditions
-    const conditions = [eq(mlPredictions.modelId, parsedModelId)];
+    // Build where conditions - mlPredictions uses modelId (string) and symbol (string)
+    const conditions = [eq(mlPredictions.modelId, modelId)];
 
     // Add optional filters
-    if (assetId && !isNaN(parseInt(assetId))) {
-      conditions.push(eq(mlPredictions.assetId, parseInt(assetId)));
-    }
-
-    if (predictionType) {
-      const validTypes = ['iv_forecast', 'volatility', 'win_probability', 'price_move', 'spread_payoff'];
-      if (validTypes.includes(predictionType)) {
-        conditions.push(eq(mlPredictions.predictionType, predictionType));
-      } else {
-        return NextResponse.json(
-          { 
-            error: 'Invalid prediction type. Must be one of: iv_forecast, volatility, win_probability, price_move, spread_payoff',
-            code: 'INVALID_PREDICTION_TYPE'
-          },
-          { status: 400 }
-        );
-      }
+    if (symbol) {
+      conditions.push(eq(mlPredictions.symbol, symbol));
     }
 
     // Query predictions with filters
@@ -77,7 +59,7 @@ export async function GET(
     const predictions = await db.select()
       .from(mlPredictions)
       .where(whereCondition)
-      .orderBy(desc(mlPredictions.timestamp))
+      .orderBy(desc(mlPredictions.createdAt))
       .limit(limit)
       .offset(offset);
 

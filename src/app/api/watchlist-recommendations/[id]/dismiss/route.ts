@@ -43,7 +43,7 @@ export async function POST(
     const updatedRecommendation = await db
       .update(watchlistRecommendations)
       .set({
-        dismissed: true
+        isDismissed: true
       })
       .where(eq(watchlistRecommendations.id, recommendationId))
       .returning();

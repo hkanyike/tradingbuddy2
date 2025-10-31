@@ -567,8 +567,10 @@ export default function BacktestPage() {
               icon={BarChart3}
               title="No Backtest Results"
               description="Run your first backtest to see results"
-              buttonText="Run Backtest"
-              onButtonClick={() => setSelectedTab('configure')}
+              action={{
+                label: "Run Backtest",
+                onClick: () => setSelectedTab('configure')
+              }}
             />
           ) : (
             <div className="space-y-6">
@@ -669,8 +671,10 @@ export default function BacktestPage() {
                   icon={BarChart3}
                   title="Need More Results"
                   description="Run at least 2 backtests to compare strategies"
-                  buttonText="Run Backtest"
-                  onButtonClick={() => setSelectedTab('configure')}
+                  action={{
+                    label: "Run Backtest",
+                    onClick: () => setSelectedTab('configure')
+                  }}
                 />
               ) : (
                 <div className="space-y-4">

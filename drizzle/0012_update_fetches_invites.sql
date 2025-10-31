@@ -39,3 +39,4 @@ ALTER TABLE market_data_fetches ADD COLUMN error_message TEXT;
 
 
 
+

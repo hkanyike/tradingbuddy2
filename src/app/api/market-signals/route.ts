@@ -38,9 +38,8 @@ export async function GET(request: NextRequest) {
     const offset = parseInt(searchParams.get('offset') || '0');
     const search = searchParams.get('search');
     const signalType = searchParams.get('signalType');
-    const strategyType = searchParams.get('strategyType');
-    const isExecuted = searchParams.get('isExecuted');
-    const assetId = searchParams.get('assetId');
+    const symbol = searchParams.get('symbol');
+    const source = searchParams.get('source');
     const sort = searchParams.get('sort') || 'createdAt';
     const order = searchParams.get('order') || 'desc';
 
@@ -50,9 +49,10 @@ export async function GET(request: NextRequest) {
     if (search) {
       conditions.push(
         or(
+          like(marketSignals.symbol, `%${search}%`),
           like(marketSignals.signalType, `%${search}%`),
-          like(marketSignals.strategyType, `%${search}%`),
-          like(marketSignals.recommendedAction, `%${search}%`)
+          like(marketSignals.source, `%${search}%`),
+          like(marketSignals.reasoning, `%${search}%`)
         )
       );
     }
@@ -61,19 +61,12 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(marketSignals.signalType, signalType));
     }
 
-    if (strategyType) {
-      conditions.push(eq(marketSignals.strategyType, strategyType));
+    if (symbol) {
+      conditions.push(eq(marketSignals.symbol, symbol));
     }
 
-    if (isExecuted !== null && isExecuted !== undefined) {
-      const isExecutedBool = isExecuted === 'true' || isExecuted === '1';
-      conditions.push(eq(marketSignals.isExecuted, isExecutedBool));
-    }
-
-    if (assetId) {
-      if (!isNaN(parseInt(assetId))) {
-        conditions.push(eq(marketSignals.assetId, parseInt(assetId)));
-      }
+    if (source) {
+      conditions.push(eq(marketSignals.source, source));
     }
 
     // Build and execute query with conditions
@@ -102,24 +95,19 @@ export async function POST(request: NextRequest) {
   try {
     const body = await request.json();
     const {
-      assetId,
+      symbol,
       signalType,
-      strategyType,
-      confidenceScore,
-      recommendedAction,
-      ivPremium,
-      skew,
-      termStructure,
-      liquidityScore,
-      riskRewardRatio,
-      isExecuted,
-      validUntil,
+      strength,
+      confidence,
+      reasoning,
+      source,
+      expiresAt,
     } = body;
 
     // Validation: Required fields
-    if (!assetId) {
+    if (!symbol) {
       return NextResponse.json(
-        { error: 'Asset ID is required', code: 'MISSING_ASSET_ID' },
+        { error: 'Symbol is required', code: 'MISSING_SYMBOL' },
         { status: 400 }
       );
     }
@@ -132,7 +120,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Validation: Signal type must be valid
-    const validSignalTypes = ['entry', 'exit', 'hedge'];
+    const validSignalTypes = ['buy', 'sell', 'hold'];
     if (!validSignalTypes.includes(signalType)) {
       return NextResponse.json(
         {
@@ -143,56 +131,54 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Validation: assetId must be a valid integer
-    if (isNaN(parseInt(assetId))) {
+    // Validation: Strength must be between 0 and 1 if provided
+    if (strength !== undefined && strength !== null) {
+      const strengthVal = parseFloat(strength);
+      if (isNaN(strengthVal) || strengthVal < 0 || strengthVal > 1) {
+        return NextResponse.json(
+          { error: 'Strength must be between 0 and 1', code: 'INVALID_STRENGTH' },
+          { status: 400 }
+        );
+      }
+    }
+
+    // Validation: Confidence must be between 0 and 1 if provided
+    if (confidence !== undefined && confidence !== null) {
+      const confidenceVal = parseFloat(confidence);
+      if (isNaN(confidenceVal) || confidenceVal < 0 || confidenceVal > 1) {
+        return NextResponse.json(
+          { error: 'Confidence must be between 0 and 1', code: 'INVALID_CONFIDENCE' },
+          { status: 400 }
+        );
+      }
+    }
+
+    if (!reasoning) {
       return NextResponse.json(
-        { error: 'Asset ID must be a valid integer', code: 'INVALID_ASSET_ID' },
+        { error: 'Reasoning is required', code: 'MISSING_REASONING' },
         { status: 400 }
       );
     }
 
-    // Validation: Check if asset exists
-    const asset = await db
-      .select()
-      .from(assets)
-      .where(eq(assets.id, parseInt(assetId)))
-      .limit(1);
-
-    if (asset.length === 0) {
+    if (!source) {
       return NextResponse.json(
-        { error: 'Asset not found', code: 'ASSET_NOT_FOUND' },
-        { status: 404 }
+        { error: 'Source is required', code: 'MISSING_SOURCE' },
+        { status: 400 }
       );
-    }
-
-    // Validation: Confidence score must be between 0 and 1 if provided
-    if (confidenceScore !== undefined && confidenceScore !== null) {
-      const score = parseFloat(confidenceScore);
-      if (isNaN(score) || score < 0 || score > 1) {
-        return NextResponse.json(
-          { error: 'Confidence score must be between 0 and 1', code: 'INVALID_CONFIDENCE_SCORE' },
-          { status: 400 }
-        );
-      }
     }
 
     // Prepare insert data with auto-generated fields
     const newSignal = await db
       .insert(marketSignals)
       .values({
-        assetId: parseInt(assetId),
+        symbol: symbol.trim().toUpperCase(),
         signalType: signalType.trim(),
-        strategyType: strategyType ? strategyType.trim() : null,
-        confidenceScore: confidenceScore !== undefined ? parseFloat(confidenceScore) : null,
-        recommendedAction: recommendedAction ? recommendedAction.trim() : null,
-        ivPremium: ivPremium !== undefined ? parseFloat(ivPremium) : null,
-        skew: skew !== undefined ? parseFloat(skew) : null,
-        termStructure: termStructure || null,
-        liquidityScore: liquidityScore !== undefined ? parseFloat(liquidityScore) : null,
-        riskRewardRatio: riskRewardRatio !== undefined ? parseFloat(riskRewardRatio) : null,
-        isExecuted: isExecuted !== undefined ? Boolean(isExecuted) : false,
-        validUntil: validUntil || null,
+        strength: strength !== undefined ? parseFloat(strength) : 0.5,
+        confidence: confidence !== undefined ? parseFloat(confidence) : 0.5,
+        reasoning: reasoning.trim(),
+        source: source.trim(),
         createdAt: new Date().toISOString(),
+        expiresAt: expiresAt || null,
       })
       .returning();
 
@@ -234,23 +220,18 @@ export async function PUT(request: NextRequest) {
 
     const body = await request.json();
     const {
-      assetId,
+      symbol,
       signalType,
-      strategyType,
-      confidenceScore,
-      recommendedAction,
-      ivPremium,
-      skew,
-      termStructure,
-      liquidityScore,
-      riskRewardRatio,
-      isExecuted,
-      validUntil,
+      strength,
+      confidence,
+      reasoning,
+      source,
+      expiresAt,
     } = body;
 
     // Validation: If signalType is being updated, it must be valid
     if (signalType !== undefined) {
-      const validSignalTypes = ['entry', 'exit', 'hedge'];
+      const validSignalTypes = ['buy', 'sell', 'hold'];
       if (!validSignalTypes.includes(signalType)) {
         return NextResponse.json(
           {
@@ -262,35 +243,23 @@ export async function PUT(request: NextRequest) {
       }
     }
 
-    // Validation: If assetId is being updated, validate it exists
-    if (assetId !== undefined) {
-      if (isNaN(parseInt(assetId))) {
+    // Validation: Strength must be between 0 and 1 if provided
+    if (strength !== undefined && strength !== null) {
+      const strengthVal = parseFloat(strength);
+      if (isNaN(strengthVal) || strengthVal < 0 || strengthVal > 1) {
         return NextResponse.json(
-          { error: 'Asset ID must be a valid integer', code: 'INVALID_ASSET_ID' },
+          { error: 'Strength must be between 0 and 1', code: 'INVALID_STRENGTH' },
           { status: 400 }
-        );
-      }
-
-      const asset = await db
-        .select()
-        .from(assets)
-        .where(eq(assets.id, parseInt(assetId)))
-        .limit(1);
-
-      if (asset.length === 0) {
-        return NextResponse.json(
-          { error: 'Asset not found', code: 'ASSET_NOT_FOUND' },
-          { status: 404 }
         );
       }
     }
 
-    // Validation: Confidence score must be between 0 and 1 if provided
-    if (confidenceScore !== undefined && confidenceScore !== null) {
-      const score = parseFloat(confidenceScore);
-      if (isNaN(score) || score < 0 || score > 1) {
+    // Validation: Confidence must be between 0 and 1 if provided
+    if (confidence !== undefined && confidence !== null) {
+      const confidenceVal = parseFloat(confidence);
+      if (isNaN(confidenceVal) || confidenceVal < 0 || confidenceVal > 1) {
         return NextResponse.json(
-          { error: 'Confidence score must be between 0 and 1', code: 'INVALID_CONFIDENCE_SCORE' },
+          { error: 'Confidence must be between 0 and 1', code: 'INVALID_CONFIDENCE' },
           { status: 400 }
         );
       }
@@ -299,18 +268,13 @@ export async function PUT(request: NextRequest) {
     // Build update object with only provided fields
     const updates: any = {};
 
-    if (assetId !== undefined) updates.assetId = parseInt(assetId);
+    if (symbol !== undefined) updates.symbol = symbol.trim().toUpperCase();
     if (signalType !== undefined) updates.signalType = signalType.trim();
-    if (strategyType !== undefined) updates.strategyType = strategyType ? strategyType.trim() : null;
-    if (confidenceScore !== undefined) updates.confidenceScore = confidenceScore !== null ? parseFloat(confidenceScore) : null;
-    if (recommendedAction !== undefined) updates.recommendedAction = recommendedAction ? recommendedAction.trim() : null;
-    if (ivPremium !== undefined) updates.ivPremium = ivPremium !== null ? parseFloat(ivPremium) : null;
-    if (skew !== undefined) updates.skew = skew !== null ? parseFloat(skew) : null;
-    if (termStructure !== undefined) updates.termStructure = termStructure || null;
-    if (liquidityScore !== undefined) updates.liquidityScore = liquidityScore !== null ? parseFloat(liquidityScore) : null;
-    if (riskRewardRatio !== undefined) updates.riskRewardRatio = riskRewardRatio !== null ? parseFloat(riskRewardRatio) : null;
-    if (isExecuted !== undefined) updates.isExecuted = Boolean(isExecuted);
-    if (validUntil !== undefined) updates.validUntil = validUntil || null;
+    if (strength !== undefined) updates.strength = strength !== null ? parseFloat(strength) : null;
+    if (confidence !== undefined) updates.confidence = confidence !== null ? parseFloat(confidence) : null;
+    if (reasoning !== undefined) updates.reasoning = reasoning.trim();
+    if (source !== undefined) updates.source = source.trim();
+    if (expiresAt !== undefined) updates.expiresAt = expiresAt || null;
 
     const updated = await db
       .update(marketSignals)

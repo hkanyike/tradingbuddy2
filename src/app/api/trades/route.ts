@@ -110,25 +110,19 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Prepare insert data with defaults and auto-generated fields
+    // Prepare insert data with defaults and auto-generated fields (matching trades schema)
     const now = new Date().toISOString();
     const insertData = {
       userId: user.id,
-      strategyId: body.strategyId || null,
-      assetId: body.assetId,
       positionId: body.positionId || null,
+      assetId: body.assetId,
       tradeType: body.tradeType,
-      positionType: body.positionType || null,
       quantity: body.quantity,
-      entryPrice: body.entryPrice || null,
-      exitPrice: body.exitPrice || null,
-      strikePrice: body.strikePrice || null,
-      expirationDate: body.expirationDate || null,
-      realizedPnl: body.realizedPnl !== undefined ? body.realizedPnl : 0,
+      price: body.price || body.entryPrice || 0,
       commission: body.commission !== undefined ? body.commission : 0,
-      slippage: body.slippage !== undefined ? body.slippage : 0,
+      pnl: body.pnl || body.realizedPnl || 0,
       executedAt: now,
-      closedAt: body.closedAt || null,
+      createdAt: now,
     };
 
     const newTrade = await db.insert(trades)

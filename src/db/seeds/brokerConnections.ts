@@ -15,11 +15,11 @@ async function main() {
     
     const sampleBrokerConnection = {
         userId: actualUserId,
-        brokerName: 'Tradier',
-        apiKeyEncrypted: 'enc_tradier_demo_key_12345',
-        isPaperTrading: true,
-        isConnected: true,
-        lastConnectedAt: currentTimestamp,
+        brokerName: 'Alpaca',
+        apiKey: 'demo_api_key_12345',
+        apiSecret: 'demo_api_secret_67890',
+        isActive: true,
+        lastSyncAt: currentTimestamp,
         createdAt: currentTimestamp,
         updatedAt: currentTimestamp,
     };

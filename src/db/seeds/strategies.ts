@@ -17,10 +17,10 @@ async function main() {
         {
             userId: userId,
             name: 'Earnings IV-Crush',
-            strategyType: 'iv_crush',
+            type: 'iv_crush',
             description: 'Exploits pre-earnings volatility expansion by selling premium before earnings announcements, capitalizing on implied volatility crush post-earnings.',
             isActive: true,
-            config: JSON.stringify({
+            parameters: JSON.stringify({
                 minIVRank: 70,
                 maxDTE: 7,
                 positionSize: 5,
@@ -38,10 +38,10 @@ async function main() {
         {
             userId: userId,
             name: 'Calendar-Carry',
-            strategyType: 'calendar',
+            type: 'calendar',
             description: 'Time decay arbitrage strategy using calendar spreads to capture theta decay differential between near-term and longer-dated options.',
             isActive: true,
-            config: JSON.stringify({
+            parameters: JSON.stringify({
                 shortLegDTE: 30,
                 longLegDTE: 60,
                 positionSize: 3,
@@ -59,10 +59,10 @@ async function main() {
         {
             userId: userId,
             name: 'Delta-Neutral Straddles',
-            strategyType: 'straddle',
+            type: 'straddle',
             description: 'Market-neutral volatility play using ATM straddles, dynamically adjusted to maintain delta neutrality while capturing gamma and vega exposure.',
             isActive: true,
-            config: JSON.stringify({
+            parameters: JSON.stringify({
                 atmStrike: 'exact',
                 dte: 45,
                 positionSize: 2,

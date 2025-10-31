@@ -29,15 +29,18 @@ export const authOptions: NextAuthOptions = {
           if (users.length === 0) {
             // Create a new user if they don't exist (for demo purposes)
             const hashedPassword = await bcrypt.hash(creds.password, 12);
+            const nowISO = new Date().toISOString();
             const newUser = await db.insert(user).values({
               id: `user-${Date.now()}`,
               name: creds.email.split("@")[0],
               email: creds.email,
-              emailVerified: true,
+              emailVerified: nowISO,
               isAdmin: creds.email.endsWith("@admin.test"),
               portfolioBalance: 100000,
               riskTolerance: "moderate",
               executionMode: "manual",
+              createdAt: nowISO,
+              updatedAt: nowISO,
             }).returning();
 
             return {

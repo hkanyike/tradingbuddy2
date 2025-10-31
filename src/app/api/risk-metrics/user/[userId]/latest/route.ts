@@ -49,17 +49,20 @@ export async function GET(
       }, { status: 200 });
     }
 
-    // Map the database response to match the expected format
+    // Map the database response to match the expected format (using available schema fields)
     const metric = latestMetrics[0];
+    const portfolioValue = metric.portfolioValue || 0;
+    const volatilityRatio = (metric.volatility || 0) / (portfolioValue || 1);
+    
     return NextResponse.json({
-      total_positions: metric.totalExposure || 0,
-      portfolio_delta: metric.netDelta || 0,
-      portfolio_gamma: metric.netGamma || 0,
-      portfolio_theta: metric.netTheta || 0,
-      portfolio_vega: metric.netVega || 0,
+      total_positions: portfolioValue,
+      portfolio_delta: metric.beta || 0,
+      portfolio_gamma: 0, // Not available in schema
+      portfolio_theta: 0, // Not available in schema
+      portfolio_vega: metric.volatility || 0,
       max_loss: metric.maxDrawdown || 0,
-      buying_power_used: metric.portfolioHeat || 0,
-      risk_level: (metric.portfolioHeat || 0) > 0.7 ? "high" : (metric.portfolioHeat || 0) > 0.4 ? "medium" : "low"
+      buying_power_used: portfolioValue * 0.5, // Estimate
+      risk_level: volatilityRatio > 0.3 ? "high" : volatilityRatio > 0.15 ? "medium" : "low"
     }, { status: 200 });
   } catch (error) {
     console.error("Error fetching latest risk metrics:", error);

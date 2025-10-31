@@ -59,7 +59,7 @@ export async function GET(request: NextRequest) {
               eq(strategies.userId, user.id),
               or(
                 like(strategies.name, `%${search}%`),
-                like(strategies.strategyType, `%${search}%`),
+                like(strategies.type, `%${search}%`),
                 like(strategies.description, `%${search}%`)
               )
             )
@@ -100,7 +100,7 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    const { name, strategyType, description, isActive, config } = body;
+    const { name, type, description, isActive, parameters } = body;
 
     // Validate required fields
     if (!name || name.trim() === '') {
@@ -110,15 +110,22 @@ export async function POST(request: NextRequest) {
       );
     }
 
+    if (!type || type.trim() === '') {
+      return NextResponse.json(
+        { error: 'Type is required', code: 'MISSING_TYPE' },
+        { status: 400 }
+      );
+    }
+
     // Prepare insert data with defaults and auto-generated fields
     const timestamp = new Date().toISOString();
     const insertData = {
       name: name.trim(),
       userId: user.id,
-      strategyType: strategyType?.trim() || null,
+      type: type.trim(),
       description: description?.trim() || null,
       isActive: isActive !== undefined ? Boolean(isActive) : true,
-      config: config || null,
+      parameters: parameters || null,
       createdAt: timestamp,
       updatedAt: timestamp,
     };
@@ -173,7 +180,7 @@ export async function PUT(request: NextRequest) {
     }
 
     const body = await request.json();
-    const { name, strategyType, description, isActive, config } = body;
+    const { name, type, description, isActive, parameters } = body;
 
     // Prepare update data
     const updateData: any = {
@@ -190,8 +197,14 @@ export async function PUT(request: NextRequest) {
       updateData.name = name.trim();
     }
 
-    if (strategyType !== undefined) {
-      updateData.strategyType = strategyType?.trim() || null;
+    if (type !== undefined) {
+      if (type.trim() === '') {
+        return NextResponse.json(
+          { error: 'Type cannot be empty', code: 'INVALID_TYPE' },
+          { status: 400 }
+        );
+      }
+      updateData.type = type.trim();
     }
 
     if (description !== undefined) {
@@ -202,8 +215,8 @@ export async function PUT(request: NextRequest) {
       updateData.isActive = Boolean(isActive);
     }
 
-    if (config !== undefined) {
-      updateData.config = config;
+    if (parameters !== undefined) {
+      updateData.parameters = parameters;
     }
 
     const updatedStrategy = await db

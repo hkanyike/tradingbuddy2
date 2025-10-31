@@ -157,10 +157,10 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    // Validate modelId exists
+    // Validate modelId exists (ID is string in schema)
     const model = await db.select()
       .from(mlModels)
-      .where(eq(mlModels.id, parseInt(modelId)))
+      .where(eq(mlModels.id, modelId))
       .limit(1);
 
     if (model.length === 0) {
@@ -197,18 +197,27 @@ export async function POST(request: NextRequest) {
       }
     }
 
+    const now = new Date().toISOString();
+    const startDate = body.startDate || now;
+    const endDate = body.endDate || now;
+    
     const newTest = await db.insert(walkForwardTests)
       .values({
         name: name.trim(),
-        modelId: parseInt(modelId),
+        modelId: modelId,
         strategyId: parseInt(strategyId),
         userId: user.id,
-        trainWindowDays: parseInt(trainWindowDays),
-        testWindowDays: parseInt(testWindowDays),
-        totalWindows: parseInt(totalWindows),
-        completedWindows: completedWindows ? parseInt(completedWindows) : 0,
+        startDate,
+        endDate,
+        trainingPeriod: parseInt(trainWindowDays),
+        testingPeriod: parseInt(testWindowDays),
+        stepSize: body.stepSize || parseInt(testWindowDays),
+        parameters: JSON.stringify({
+          totalWindows: parseInt(totalWindows),
+          completedWindows: completedWindows ? parseInt(completedWindows) : 0,
+        }),
         status: status || 'running',
-        createdAt: new Date().toISOString(),
+        createdAt: now,
       })
       .returning();
 

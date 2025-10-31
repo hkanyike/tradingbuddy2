@@ -109,9 +109,9 @@ export async function PUT(
       portfolioBalance?: number;
       riskTolerance?: string;
       executionMode?: string;
-      updatedAt: Date;
+      updatedAt: string;
     } = {
-      updatedAt: new Date()
+      updatedAt: new Date().toISOString()
     };
 
     if (email !== undefined) {

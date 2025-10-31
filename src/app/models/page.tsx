@@ -366,8 +366,10 @@ export default function ModelsPage() {
               icon={Brain}
               title="No Models"
               description="Train your first machine learning model to get started"
-              buttonText="Train New Model"
-              onButtonClick={trainNewModel}
+              action={{
+                label: "Train New Model",
+                onClick: trainNewModel
+              }}
             />
           ) : (
             <div className="grid grid-cols-1 lg:grid-cols-2 gap-6">
@@ -455,8 +457,10 @@ export default function ModelsPage() {
                   icon={Activity}
                   title="No Active Training"
                   description="No models are currently being trained"
-                  buttonText="Start Training"
-                  onButtonClick={trainNewModel}
+                  action={{
+                    label: "Start Training",
+                    onClick: trainNewModel
+                  }}
                 />
               ) : (
                 <div className="space-y-4">
@@ -501,8 +505,10 @@ export default function ModelsPage() {
                   icon={BarChart3}
                   title="No Performance Data"
                   description="Train some models to see performance metrics"
-                  buttonText="Train New Model"
-                  onButtonClick={trainNewModel}
+                  action={{
+                    label: "Train New Model",
+                    onClick: trainNewModel
+                  }}
                 />
               ) : (
                 <div className="space-y-4">

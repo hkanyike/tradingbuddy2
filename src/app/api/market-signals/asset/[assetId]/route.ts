@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { db } from "@/db";
-import { marketSignals } from "@/db/schema";
+import { marketSignals, assets } from "@/db/schema";
 import { eq } from "drizzle-orm";
 
 export async function GET(
@@ -10,10 +10,25 @@ export async function GET(
   const { assetId } = await params;
   
   try {
+    // First, get the asset to find its symbol
+    const asset = await db
+      .select()
+      .from(assets)
+      .where(eq(assets.id, parseInt(assetId)))
+      .limit(1);
+
+    if (!asset.length) {
+      return NextResponse.json(
+        { error: "Asset not found" },
+        { status: 404 }
+      );
+    }
+
+    // Then get market signals by symbol
     const signals = await db
       .select()
       .from(marketSignals)
-      .where(eq(marketSignals.assetId, parseInt(assetId)));
+      .where(eq(marketSignals.symbol, asset[0].symbol));
 
     return NextResponse.json(signals, { status: 200 });
   } catch (error) {

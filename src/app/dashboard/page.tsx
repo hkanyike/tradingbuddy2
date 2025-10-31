@@ -402,16 +402,16 @@ export default function DashboardPage() {
       
       const midPrice = (quote.bidPrice + quote.askPrice) / 2;
       
-      // Update AI engine
-      aiEngine.updateMarketData(quote.symbol, {
-        symbol: quote.symbol,
-        price: midPrice,
-        iv30d: 0.25,
-        realizedVol20d: 0.20,
-        volume: 1000000,
-        ivRank: 50,
-        ivPercentile: 50,
-      });
+      // Update AI engine (commented out - aiEngine not defined)
+      // aiEngine.updateMarketData(quote.symbol, {
+      //   symbol: quote.symbol,
+      //   price: midPrice,
+      //   iv30d: 0.25,
+      //   realizedVol20d: 0.20,
+      //   volume: 1000000,
+      //   ivRank: 50,
+      //   ivPercentile: 50,
+      // });
 
       // Update market indexes (SPY, QQQ, DIA, IWM)
       setMarketIndexes(prev => {
@@ -505,18 +505,18 @@ export default function DashboardPage() {
     return () => {
       ws.disconnect();
     };
-  }, [session, aiEngine]);
+  }, [session]);
 
   // AI recommendations - only regenerate when positions actually change
   useEffect(() => {
     if (positions.length > 0) {
-      aiEngine.updatePositions(positions);
+      // aiEngine.updatePositions(positions);
       
-      const recommendations = aiEngine.generateRecommendations();
-      setAiRecommendations(recommendations);
-      console.log(`🤖 AI generated ${recommendations.length} recommendations`);
+      // const recommendations = aiEngine.generateRecommendations();
+      // setAiRecommendations(recommendations);
+      // console.log(`🤖 AI generated ${recommendations.length} recommendations`);
     }
-  }, [positions, aiEngine]);
+  }, [positions]);
 
   // Live updates interval - don't include positions.length
   useEffect(() => {
@@ -589,11 +589,11 @@ export default function DashboardPage() {
 
   // Fetch RL agent statistics
   useEffect(() => {
-    if (aiEngine) {
-      const stats = aiEngine.getRLStatistics();
-      setRlStats(stats);
-    }
-  }, [aiRecommendations, aiEngine]);
+    // if (aiEngine) {
+    //   const stats = aiEngine.getRLStatistics();
+    //   setRlStats(stats);
+    // }
+  }, [aiRecommendations]);
 
   const calculateLiveGreeks = (position: any, currentPrice: number) => {
     const timeToExpiry = position.expirationDate 
@@ -808,8 +808,10 @@ export default function DashboardPage() {
       // Initialize ML integration
       await mlDashboardIntegration.initialize();
 
-      // Get watchlist symbols
-      const watchlistSymbols = watchlist.map(item => item.symbol || item.asset?.symbol).filter(Boolean);
+      // Get watchlist symbols from assetIds
+      const watchlistSymbols = watchlist
+        .map((item) => allAssets.find((a) => a.id === item.assetId)?.symbol)
+        .filter(Boolean) as string[];
       
       if (watchlistSymbols.length > 0) {
         // Get ML recommendations

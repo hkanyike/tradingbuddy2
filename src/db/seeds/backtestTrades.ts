@@ -20,10 +20,10 @@ async function main() {
             maxAdverseExcursion: -825.00,
             maxFavorableExcursion: 7200.00,
             holdDurationHours: 54.5,
-            entrySignals: { iv_rank: 82, iv_percentile: 88, earnings_days: 2, liquidity_score: 0.95 },
+            entrySignals: JSON.stringify({ iv_rank: 82, iv_percentile: 88, earnings_days: 2, liquidity_score: 0.95 }),
             exitReason: 'PROFIT_TARGET',
-            greeksAtEntry: { delta: 0.02, gamma: 0.08, theta: -45.2, vega: 125.5 },
-            greeksAtExit: { delta: 0.01, gamma: 0.03, theta: -12.3, vega: 38.2 }
+            greeksAtEntry: JSON.stringify({ delta: 0.02, gamma: 0.08, theta: -45.2, vega: 125.5 }),
+            greeksAtExit: JSON.stringify({ delta: 0.01, gamma: 0.03, theta: -12.3, vega: 38.2 })
         },
         {
             backtestId: 1,
@@ -42,10 +42,10 @@ async function main() {
             maxAdverseExcursion: -4800.00,
             maxFavorableExcursion: 320.00,
             holdDurationHours: 28.25,
-            entrySignals: { iv_rank: 75, momentum_signal: 0.82, volume_surge: 1.45 },
+            entrySignals: JSON.stringify({ iv_rank: 75, momentum_signal: 0.82, volume_surge: 1.45 }),
             exitReason: 'STOP_LOSS',
-            greeksAtEntry: { delta: 0.65, gamma: 0.04, theta: -28.5, vega: 88.3 },
-            greeksAtExit: { delta: 0.38, gamma: 0.02, theta: -15.2, vega: 42.1 }
+            greeksAtEntry: JSON.stringify({ delta: 0.65, gamma: 0.04, theta: -28.5, vega: 88.3 }),
+            greeksAtExit: JSON.stringify({ delta: 0.38, gamma: 0.02, theta: -15.2, vega: 42.1 })
         },
         {
             backtestId: 1,
@@ -64,10 +64,10 @@ async function main() {
             maxAdverseExcursion: -450.00,
             maxFavorableExcursion: 3800.00,
             holdDurationHours: 76.5,
-            entrySignals: { iv_rank: 78, iv_percentile: 85, earnings_days: 3, liquidity_score: 0.92 },
+            entrySignals: JSON.stringify({ iv_rank: 78, iv_percentile: 85, earnings_days: 3, liquidity_score: 0.92 }),
             exitReason: 'PROFIT_TARGET',
-            greeksAtEntry: { delta: 0.01, gamma: 0.12, theta: -52.8, vega: 148.2 },
-            greeksAtExit: { delta: 0.02, gamma: 0.05, theta: -18.5, vega: 52.3 }
+            greeksAtEntry: JSON.stringify({ delta: 0.01, gamma: 0.12, theta: -52.8, vega: 148.2 }),
+            greeksAtExit: JSON.stringify({ delta: 0.02, gamma: 0.05, theta: -18.5, vega: 52.3 })
         },
         {
             backtestId: 1,
@@ -86,10 +86,10 @@ async function main() {
             maxAdverseExcursion: -320.00,
             maxFavorableExcursion: 2450.00,
             holdDurationHours: 126.25,
-            entrySignals: { iv_rank: 45, support_level: 442.50, rsi: 38, volume_score: 0.88 },
+            entrySignals: JSON.stringify({ iv_rank: 45, support_level: 442.50, rsi: 38, volume_score: 0.88 }),
             exitReason: 'PROFIT_TARGET',
-            greeksAtEntry: { delta: 0.42, gamma: 0.06, theta: -18.2, vega: 72.5 },
-            greeksAtExit: { delta: 0.58, gamma: 0.04, theta: -12.8, vega: 48.3 }
+            greeksAtEntry: JSON.stringify({ delta: 0.42, gamma: 0.06, theta: -18.2, vega: 72.5 }),
+            greeksAtExit: JSON.stringify({ delta: 0.58, gamma: 0.04, theta: -12.8, vega: 48.3 })
         },
         {
             backtestId: 1,
@@ -108,10 +108,10 @@ async function main() {
             maxAdverseExcursion: -180.00,
             maxFavorableExcursion: 950.00,
             holdDurationHours: 339.5,
-            entrySignals: { iv_skew: 0.15, term_structure: 'backwardation', liquidity_score: 0.94 },
+            entrySignals: JSON.stringify({ iv_skew: 0.15, term_structure: 'backwardation', liquidity_score: 0.94 }),
             exitReason: 'TIME_STOP',
-            greeksAtEntry: { delta: -0.08, gamma: 0.03, theta: 8.5, vega: -22.4 },
-            greeksAtExit: { delta: -0.05, gamma: 0.02, theta: 4.2, vega: -12.8 }
+            greeksAtEntry: JSON.stringify({ delta: -0.08, gamma: 0.03, theta: 8.5, vega: -22.4 }),
+            greeksAtExit: JSON.stringify({ delta: -0.05, gamma: 0.02, theta: 4.2, vega: -12.8 })
         },
         {
             backtestId: 1,
@@ -130,10 +130,10 @@ async function main() {
             maxAdverseExcursion: -680.00,
             maxFavorableExcursion: 5100.00,
             holdDurationHours: 45.5,
-            entrySignals: { iv_rank: 92, volatility_expansion: 1.85, event_catalyst: 'earnings', liquidity_score: 0.89 },
+            entrySignals: JSON.stringify({ iv_rank: 92, volatility_expansion: 1.85, event_catalyst: 'earnings', liquidity_score: 0.89 }),
             exitReason: 'PROFIT_TARGET',
-            greeksAtEntry: { delta: 0.05, gamma: 0.15, theta: -68.5, vega: 185.2 },
-            greeksAtExit: { delta: 0.28, gamma: 0.09, theta: -42.3, vega: 128.7 }
+            greeksAtEntry: JSON.stringify({ delta: 0.05, gamma: 0.15, theta: -68.5, vega: 185.2 }),
+            greeksAtExit: JSON.stringify({ delta: 0.28, gamma: 0.09, theta: -42.3, vega: 128.7 })
         },
         {
             backtestId: 1,
@@ -152,10 +152,10 @@ async function main() {
             maxAdverseExcursion: -1520.00,
             maxFavorableExcursion: 150.00,
             holdDurationHours: 78.5,
-            entrySignals: { iv_rank: 58, resistance_level: 378.50, macd_signal: -0.45 },
+            entrySignals: JSON.stringify({ iv_rank: 58, resistance_level: 378.50, macd_signal: -0.45 }),
             exitReason: 'STOP_LOSS',
-            greeksAtEntry: { delta: -0.35, gamma: 0.05, theta: 12.8, vega: -52.3 },
-            greeksAtExit: { delta: -0.48, gamma: 0.03, theta: 8.5, vega: -38.2 }
+            greeksAtEntry: JSON.stringify({ delta: -0.35, gamma: 0.05, theta: 12.8, vega: -52.3 }),
+            greeksAtExit: JSON.stringify({ delta: -0.48, gamma: 0.03, theta: 8.5, vega: -38.2 })
         },
         {
             backtestId: 1,
@@ -174,10 +174,10 @@ async function main() {
             maxAdverseExcursion: -420.00,
             maxFavorableExcursion: 1900.00,
             holdDurationHours: 412.25,
-            entrySignals: { iv_term_structure: 'steep_contango', front_month_iv: 45, back_month_iv: 38 },
+            entrySignals: JSON.stringify({ iv_term_structure: 'steep_contango', front_month_iv: 45, back_month_iv: 38 }),
             exitReason: 'SIGNAL_EXIT',
-            greeksAtEntry: { delta: 0.12, gamma: -0.02, theta: -15.5, vega: 42.8 },
-            greeksAtExit: { delta: 0.18, gamma: -0.01, theta: -8.2, vega: 28.5 }
+            greeksAtEntry: JSON.stringify({ delta: 0.12, gamma: -0.02, theta: -15.5, vega: 42.8 }),
+            greeksAtExit: JSON.stringify({ delta: 0.18, gamma: -0.01, theta: -8.2, vega: 28.5 })
         },
         {
             backtestId: 1,
@@ -196,10 +196,10 @@ async function main() {
             maxAdverseExcursion: -1850.00,
             maxFavorableExcursion: 280.00,
             holdDurationHours: 75.5,
-            entrySignals: { iv_rank: 68, put_call_ratio: 1.25, skew_index: 0.22 },
+            entrySignals: JSON.stringify({ iv_rank: 68, put_call_ratio: 1.25, skew_index: 0.22 }),
             exitReason: 'STOP_LOSS',
-            greeksAtEntry: { delta: -0.42, gamma: 0.08, theta: 32.5, vega: -88.4 },
-            greeksAtExit: { delta: -0.58, gamma: 0.06, theta: 28.2, vega: -72.8 }
+            greeksAtEntry: JSON.stringify({ delta: -0.42, gamma: 0.08, theta: 32.5, vega: -88.4 }),
+            greeksAtExit: JSON.stringify({ delta: -0.58, gamma: 0.06, theta: 28.2, vega: -72.8 })
         },
         {
             backtestId: 1,
@@ -218,10 +218,10 @@ async function main() {
             maxAdverseExcursion: -520.00,
             maxFavorableExcursion: 2250.00,
             holdDurationHours: 44.5,
-            entrySignals: { iv_rank: 35, vix_level: 18.5, expected_move: 2.8, liquidity_score: 0.96 },
+            entrySignals: JSON.stringify({ iv_rank: 35, vix_level: 18.5, expected_move: 2.8, liquidity_score: 0.96 }),
             exitReason: 'PROFIT_TARGET',
-            greeksAtEntry: { delta: 0.08, gamma: 0.11, theta: -38.5, vega: 112.3 },
-            greeksAtExit: { delta: 0.15, gamma: 0.08, theta: -28.2, vega: 82.5 }
+            greeksAtEntry: JSON.stringify({ delta: 0.08, gamma: 0.11, theta: -38.5, vega: 112.3 }),
+            greeksAtExit: JSON.stringify({ delta: 0.15, gamma: 0.08, theta: -28.2, vega: 82.5 })
         }
     ];
 

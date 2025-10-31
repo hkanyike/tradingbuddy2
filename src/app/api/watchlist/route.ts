@@ -96,13 +96,13 @@ export async function POST(request: NextRequest) {
     }
 
     // Create watchlist item
+    const now = new Date().toISOString();
     const newWatchlistItem = await db.insert(watchlist)
       .values({
         userId: userId,
         assetId: parsedAssetId,
-        notes: notes || null,
-        aiRecommended: aiRecommended || false,
-        addedAt: new Date().toISOString()
+        addedAt: now,
+        createdAt: now
       })
       .returning();
 

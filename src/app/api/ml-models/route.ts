@@ -32,7 +32,7 @@ export async function GET(request: NextRequest) {
     const id = searchParams.get('id');
 
     if (id) {
-      if (!id || isNaN(parseInt(id))) {
+      if (!id) {
         return NextResponse.json({ 
           error: "Valid ID is required",
           code: "INVALID_ID" 
@@ -41,7 +41,7 @@ export async function GET(request: NextRequest) {
 
       const model = await db.select()
         .from(mlModels)
-        .where(eq(mlModels.id, parseInt(id)))
+        .where(eq(mlModels.id, id))
         .limit(1);
 
       if (model.length === 0) {
@@ -57,7 +57,7 @@ export async function GET(request: NextRequest) {
     const limit = Math.min(parseInt(searchParams.get('limit') ?? '10'), 100);
     const offset = parseInt(searchParams.get('offset') ?? '0');
     const status = searchParams.get('status');
-    const modelType = searchParams.get('modelType');
+    const type = searchParams.get('type');
 
     let query = db.select().from(mlModels);
 
@@ -73,14 +73,14 @@ export async function GET(request: NextRequest) {
       conditions.push(eq(mlModels.status, status));
     }
 
-    if (modelType) {
-      if (!isValidModelType(modelType)) {
+    if (type) {
+      if (!isValidModelType(type)) {
         return NextResponse.json({ 
-          error: `Invalid modelType. Must be one of: ${VALID_MODEL_TYPES.join(', ')}`,
+          error: `Invalid type. Must be one of: ${VALID_MODEL_TYPES.join(', ')}`,
           code: "INVALID_MODEL_TYPE" 
         }, { status: 400 });
       }
-      conditions.push(eq(mlModels.modelType, modelType));
+      conditions.push(eq(mlModels.type, type));
     }
 
     const results = conditions.length > 0
@@ -107,13 +107,15 @@ export async function POST(request: NextRequest) {
     const body = await request.json();
     const { 
       name, 
-      modelType, 
+      type,
+      algorithm,
       version, 
-      strategyId,
-      description,
       hyperparameters,
       featureImportance,
-      status
+      status,
+      metrics,
+      modelPath,
+      trainingDataSize
     } = body;
 
     if (!name || typeof name !== 'string' || name.trim().length === 0) {
@@ -123,17 +125,24 @@ export async function POST(request: NextRequest) {
       }, { status: 400 });
     }
 
-    if (!modelType || typeof modelType !== 'string') {
+    if (!type || typeof type !== 'string') {
       return NextResponse.json({ 
-        error: "Model type is required",
-        code: "MISSING_MODEL_TYPE" 
+        error: "Type is required",
+        code: "MISSING_TYPE" 
       }, { status: 400 });
     }
 
-    if (!isValidModelType(modelType)) {
+    if (!isValidModelType(type)) {
       return NextResponse.json({ 
-        error: `Invalid modelType. Must be one of: ${VALID_MODEL_TYPES.join(', ')}`,
+        error: `Invalid type. Must be one of: ${VALID_MODEL_TYPES.join(', ')}`,
         code: "INVALID_MODEL_TYPE" 
+      }, { status: 400 });
+    }
+
+    if (!algorithm || typeof algorithm !== 'string' || algorithm.trim().length === 0) {
+      return NextResponse.json({ 
+        error: "Algorithm is required and must be a non-empty string",
+        code: "MISSING_ALGORITHM" 
       }, { status: 400 });
     }
 
@@ -183,33 +192,36 @@ export async function POST(request: NextRequest) {
       }
     }
 
-    if (strategyId !== undefined && strategyId !== null) {
-      if (isNaN(parseInt(String(strategyId)))) {
+    if (metrics) {
+      if (typeof metrics === 'string') {
+        if (!isValidJSON(metrics)) {
+          return NextResponse.json({ 
+            error: "Metrics must be valid JSON",
+            code: "INVALID_METRICS_JSON" 
+          }, { status: 400 });
+        }
+      } else if (typeof metrics !== 'object') {
         return NextResponse.json({ 
-          error: "Strategy ID must be a valid integer",
-          code: "INVALID_STRATEGY_ID" 
+          error: "Metrics must be a valid JSON object or string",
+          code: "INVALID_METRICS_TYPE" 
         }, { status: 400 });
       }
     }
 
     const currentTimestamp = new Date().toISOString();
+    const modelId = `${type}-${Date.now()}`;
 
     const insertData: any = {
+      id: modelId,
       name: name.trim(),
-      modelType,
+      type,
+      algorithm: algorithm.trim(),
       version: version.trim(),
       status: status || 'training',
+      trainedAt: Date.now(),
       createdAt: currentTimestamp,
       updatedAt: currentTimestamp,
     };
-
-    if (strategyId !== undefined && strategyId !== null) {
-      insertData.strategyId = parseInt(String(strategyId));
-    }
-
-    if (description) {
-      insertData.description = typeof description === 'string' ? description.trim() : String(description);
-    }
 
     if (hyperparameters) {
       insertData.hyperparameters = typeof hyperparameters === 'string' 
@@ -221,6 +233,20 @@ export async function POST(request: NextRequest) {
       insertData.featureImportance = typeof featureImportance === 'string' 
         ? featureImportance 
         : JSON.stringify(featureImportance);
+    }
+
+    if (metrics) {
+      insertData.metrics = typeof metrics === 'string' 
+        ? metrics 
+        : JSON.stringify(metrics);
+    }
+
+    if (modelPath) {
+      insertData.modelPath = modelPath;
+    }
+
+    if (trainingDataSize !== undefined && trainingDataSize !== null) {
+      insertData.trainingDataSize = parseInt(String(trainingDataSize));
     }
 
     const newModel = await db.insert(mlModels)
@@ -241,7 +267,7 @@ export async function PUT(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
-    if (!id || isNaN(parseInt(id))) {
+    if (!id) {
       return NextResponse.json({ 
         error: "Valid ID is required",
         code: "INVALID_ID" 
@@ -250,7 +276,7 @@ export async function PUT(request: NextRequest) {
 
     const existingModel = await db.select()
       .from(mlModels)
-      .where(eq(mlModels.id, parseInt(id)))
+      .where(eq(mlModels.id, id))
       .limit(1);
 
     if (existingModel.length === 0) {
@@ -263,12 +289,14 @@ export async function PUT(request: NextRequest) {
     const body = await request.json();
     const { 
       name, 
-      modelType, 
+      type,
+      algorithm,
       version, 
-      strategyId,
-      description,
       hyperparameters,
       featureImportance,
+      metrics,
+      modelPath,
+      trainingDataSize,
       status
     } = body;
 
@@ -286,14 +314,24 @@ export async function PUT(request: NextRequest) {
       updates.name = name.trim();
     }
 
-    if (modelType !== undefined) {
-      if (!isValidModelType(modelType)) {
+    if (type !== undefined) {
+      if (!isValidModelType(type)) {
         return NextResponse.json({ 
-          error: `Invalid modelType. Must be one of: ${VALID_MODEL_TYPES.join(', ')}`,
+          error: `Invalid type. Must be one of: ${VALID_MODEL_TYPES.join(', ')}`,
           code: "INVALID_MODEL_TYPE" 
         }, { status: 400 });
       }
-      updates.modelType = modelType;
+      updates.type = type;
+    }
+
+    if (algorithm !== undefined) {
+      if (typeof algorithm !== 'string' || algorithm.trim().length === 0) {
+        return NextResponse.json({ 
+          error: "Algorithm must be a non-empty string",
+          code: "INVALID_ALGORITHM" 
+        }, { status: 400 });
+      }
+      updates.algorithm = algorithm.trim();
     }
 
     if (version !== undefined) {
@@ -316,23 +354,16 @@ export async function PUT(request: NextRequest) {
       updates.status = status;
     }
 
-    if (strategyId !== undefined) {
-      if (strategyId === null) {
-        updates.strategyId = null;
-      } else if (isNaN(parseInt(String(strategyId)))) {
-        return NextResponse.json({ 
-          error: "Strategy ID must be a valid integer or null",
-          code: "INVALID_STRATEGY_ID" 
-        }, { status: 400 });
-      } else {
-        updates.strategyId = parseInt(String(strategyId));
-      }
+    if (modelPath !== undefined) {
+      updates.modelPath = modelPath === null ? null : String(modelPath);
     }
 
-    if (description !== undefined) {
-      updates.description = description === null 
-        ? null 
-        : (typeof description === 'string' ? description.trim() : String(description));
+    if (trainingDataSize !== undefined) {
+      if (trainingDataSize === null) {
+        updates.trainingDataSize = null;
+      } else {
+        updates.trainingDataSize = parseInt(String(trainingDataSize));
+      }
     }
 
     if (hyperparameters !== undefined) {
@@ -377,9 +408,30 @@ export async function PUT(request: NextRequest) {
       }
     }
 
+    if (metrics !== undefined) {
+      if (metrics === null) {
+        updates.metrics = null;
+      } else if (typeof metrics === 'string') {
+        if (!isValidJSON(metrics)) {
+          return NextResponse.json({ 
+            error: "Metrics must be valid JSON",
+            code: "INVALID_METRICS_JSON" 
+          }, { status: 400 });
+        }
+        updates.metrics = metrics;
+      } else if (typeof metrics === 'object') {
+        updates.metrics = JSON.stringify(metrics);
+      } else {
+        return NextResponse.json({ 
+          error: "Metrics must be a valid JSON object, string, or null",
+          code: "INVALID_METRICS_TYPE" 
+        }, { status: 400 });
+      }
+    }
+
     const updated = await db.update(mlModels)
       .set(updates)
-      .where(eq(mlModels.id, parseInt(id)))
+      .where(eq(mlModels.id, id))
       .returning();
 
     return NextResponse.json(updated[0]);
@@ -396,7 +448,7 @@ export async function DELETE(request: NextRequest) {
     const searchParams = request.nextUrl.searchParams;
     const id = searchParams.get('id');
 
-    if (!id || isNaN(parseInt(id))) {
+    if (!id) {
       return NextResponse.json({ 
         error: "Valid ID is required",
         code: "INVALID_ID" 
@@ -405,7 +457,7 @@ export async function DELETE(request: NextRequest) {
 
     const existingModel = await db.select()
       .from(mlModels)
-      .where(eq(mlModels.id, parseInt(id)))
+      .where(eq(mlModels.id, id))
       .limit(1);
 
     if (existingModel.length === 0) {
@@ -416,7 +468,7 @@ export async function DELETE(request: NextRequest) {
     }
 
     const deleted = await db.delete(mlModels)
-      .where(eq(mlModels.id, parseInt(id)))
+      .where(eq(mlModels.id, id))
       .returning();
 
     return NextResponse.json({
