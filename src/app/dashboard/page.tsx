@@ -589,11 +589,23 @@ export default function DashboardPage() {
 
   // Fetch RL agent statistics
   useEffect(() => {
-    // if (aiEngine) {
-    //   const stats = aiEngine.getRLStatistics();
-    //   setRlStats(stats);
-    // }
-  }, [aiRecommendations]);
+    const fetchRLStats = async () => {
+      try {
+        const response = await fetch('/api/rl/stats');
+        if (response.ok) {
+          const data = await response.json();
+          setRlStats(data);
+        }
+      } catch (error) {
+        console.error('Error fetching RL stats:', error);
+      }
+    };
+
+    fetchRLStats();
+    // Refresh every 30 seconds
+    const interval = setInterval(fetchRLStats, 30000);
+    return () => clearInterval(interval);
+  }, []);
 
   const calculateLiveGreeks = (position: any, currentPrice: number) => {
     const timeToExpiry = position.expirationDate 

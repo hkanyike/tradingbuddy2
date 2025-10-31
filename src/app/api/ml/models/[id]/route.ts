@@ -3,7 +3,9 @@ import { modelService } from '@/lib/ml/model-service';
 import { getServerSession } from 'next-auth';
 import { authOptions } from '@/lib/auth-options';
 
-// GET /api/ml/models/[id] - Get specific model
+/**
+ * GET /api/ml/models/[id] - Get a specific model by ID
+ */
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -37,7 +39,9 @@ export async function GET(
   }
 }
 
-// DELETE /api/ml/models/[id] - Delete model
+/**
+ * DELETE /api/ml/models/[id] - Delete a model
+ */
 export async function DELETE(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
@@ -52,16 +56,19 @@ export async function DELETE(
     }
 
     const { id } = await params;
-    const deleted = modelService.deleteModel(id);
+    const success = modelService.deleteModel(id);
 
-    if (!deleted) {
+    if (!success) {
       return NextResponse.json(
         { error: 'Model not found', code: 'NOT_FOUND' },
         { status: 404 }
       );
     }
 
-    return NextResponse.json({ message: 'Model deleted successfully' }, { status: 200 });
+    return NextResponse.json({ 
+      success: true, 
+      message: 'Model deleted successfully' 
+    }, { status: 200 });
   } catch (error) {
     console.error('Error deleting model:', error);
     return NextResponse.json(
