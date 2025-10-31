@@ -1399,33 +1399,36 @@ export default function DashboardPage() {
                   <Zap className="h-4 w-4 mr-1.5" />
                   Strategies
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hover:bg-secondary/80"
-                  onClick={() => router.push('/risk')}
-                >
-                  <Shield className="h-4 w-4 mr-1.5" />
-                  Risk
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hover:bg-secondary/80"
-                  onClick={() => router.push('/data')}
-                >
-                  <Database className="h-4 w-4 mr-1.5" />
-                  Data
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hover:bg-secondary/80"
-                  onClick={() => router.push('/backtest')}
-                >
-                  <TestTube className="h-4 w-4 mr-1.5" />
-                  Backtest
-                </Button>
+
+                {/* Backtest Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="hover:bg-secondary/80"
+                    >
+                      <TestTube className="h-4 w-4 mr-1.5" />
+                      Analysis
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => router.push('/backtest')}>
+                      <TestTube className="h-4 w-4 mr-2" />
+                      Backtest
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/risk')}>
+                      <Shield className="h-4 w-4 mr-2" />
+                      Risk
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/data')}>
+                      <Database className="h-4 w-4 mr-2" />
+                      Data
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
+
                 <Button 
                   variant="ghost" 
                   size="sm" 
@@ -1453,24 +1456,31 @@ export default function DashboardPage() {
                   <Sparkles className="h-4 w-4 mr-1.5" />
                   AI Scanner
                 </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hover:bg-secondary/80"
-                  onClick={() => router.push('/help')}
-                >
-                  <Info className="h-4 w-4 mr-1.5" />
-                  Help
-                </Button>
-                <Button 
-                  variant="ghost" 
-                  size="sm" 
-                  className="hover:bg-secondary/80"
-                  onClick={() => router.push('/settings')}
-                >
-                  <SettingsIcon className="h-4 w-4 mr-1.5" />
-                  Settings
-                </Button>
+
+                {/* Help Dropdown */}
+                <DropdownMenu>
+                  <DropdownMenuTrigger asChild>
+                    <Button 
+                      variant="ghost" 
+                      size="sm" 
+                      className="hover:bg-secondary/80"
+                    >
+                      <Info className="h-4 w-4 mr-1.5" />
+                      Help
+                      <ChevronDown className="h-3 w-3 ml-1" />
+                    </Button>
+                  </DropdownMenuTrigger>
+                  <DropdownMenuContent align="start">
+                    <DropdownMenuItem onClick={() => router.push('/help')}>
+                      <Info className="h-4 w-4 mr-2" />
+                      Help Center
+                    </DropdownMenuItem>
+                    <DropdownMenuItem onClick={() => router.push('/settings')}>
+                      <SettingsIcon className="h-4 w-4 mr-2" />
+                      Settings
+                    </DropdownMenuItem>
+                  </DropdownMenuContent>
+                </DropdownMenu>
               </nav>
             </div>
             
