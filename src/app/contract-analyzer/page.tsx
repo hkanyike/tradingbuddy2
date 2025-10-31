@@ -42,6 +42,8 @@ export default function ContractAnalyzerPage() {
   
   const [isAnalyzing, setIsAnalyzing] = useState(false);
   const [analysis, setAnalysis] = useState<any>(null);
+  const [gptInsight, setGptInsight] = useState<any>(null);
+  const [isLoadingGpt, setIsLoadingGpt] = useState(false);
 
   const handleAnalyze = async () => {
     if (!symbol || !strikePrice || !expirationDate) {
@@ -51,6 +53,7 @@ export default function ContractAnalyzerPage() {
 
     setIsAnalyzing(true);
     setAnalysis(null);
+    setGptInsight(null);
 
     try {
       const response = await fetch('/api/ai/analyze-contract', {
@@ -78,6 +81,51 @@ export default function ContractAnalyzerPage() {
       toast.error('Failed to analyze contract');
     } finally {
       setIsAnalyzing(false);
+    }
+  };
+
+  const handleGetGPTInsight = async () => {
+    if (!analysis) {
+      toast.error('Please run analysis first');
+      return;
+    }
+
+    setIsLoadingGpt(true);
+
+    try {
+      const response = await fetch('/api/ai/insights', {
+        method: 'POST',
+        headers: { 'Content-Type': 'application/json' },
+        body: JSON.stringify({
+          action: 'trade_insight',
+          symbol: symbol.toUpperCase(),
+          contractDetails: {
+            strike: parseFloat(strikePrice),
+            expiration: expirationDate,
+            type: optionType,
+            currentPrice: analysis.marketData.contractPrice,
+            iv: analysis.ivAnalysis.currentIV,
+            delta: analysis.greeks.delta,
+            theta: analysis.greeks.theta,
+            vega: analysis.greeks.vega,
+            gamma: analysis.greeks.gamma
+          }
+        }),
+      });
+
+      if (response.ok) {
+        const result = await response.json();
+        setGptInsight(result);
+        toast.success('GPT analysis loaded!');
+      } else {
+        const error = await response.json();
+        toast.error(error.error || 'GPT analysis failed');
+      }
+    } catch (error) {
+      console.error('Error getting GPT insight:', error);
+      toast.error('Failed to get GPT insight');
+    } finally {
+      setIsLoadingGpt(false);
     }
   };
 
@@ -281,8 +329,112 @@ export default function ContractAnalyzerPage() {
                     {analysis.recommendation.riskLevel.toUpperCase().replace('-', ' ')} RISK
                   </Badge>
                 </div>
+                
+                {/* GPT Insight Button */}
+                <div className="mt-4 pt-4 border-t">
+                  <Button 
+                    onClick={handleGetGPTInsight}
+                    disabled={isLoadingGpt}
+                    variant="outline"
+                    className="w-full sm:w-auto"
+                  >
+                    {isLoadingGpt ? (
+                      <>
+                        <LoadingSpinner className="mr-2 h-4 w-4" />
+                        Getting GPT Insights...
+                      </>
+                    ) : (
+                      <>
+                        <Zap className="mr-2 h-4 w-4" />
+                        Get OpenAI GPT Insights
+                      </>
+                    )}
+                  </Button>
+                  <p className="text-xs text-muted-foreground mt-2">
+                    {process.env.NEXT_PUBLIC_OPENAI_ENABLED === 'true' 
+                      ? 'Powered by GPT-4 for deep market analysis' 
+                      : 'Requires OpenAI API key'}
+                  </p>
+                </div>
               </CardContent>
             </Card>
+
+            {/* GPT Insight Card */}
+            {gptInsight && (
+              <Card className="border-purple-500/30 bg-gradient-to-br from-purple-500/10 to-card">
+                <CardHeader>
+                  <CardTitle className="flex items-center gap-2">
+                    <Zap className="h-5 w-5 text-purple-500" />
+                    OpenAI GPT-4 Analysis
+                  </CardTitle>
+                  <CardDescription>Advanced AI-powered market insights</CardDescription>
+                </CardHeader>
+                <CardContent className="space-y-4">
+                  <div>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Activity className="h-4 w-4" />
+                      Analysis
+                    </h4>
+                    <p className="text-sm text-muted-foreground">{gptInsight.analysis}</p>
+                  </div>
+                  
+                  <div>
+                    <h4 className="font-semibold mb-2 flex items-center gap-2">
+                      <Info className="h-4 w-4" />
+                      Reasoning
+                    </h4>
+                    <p className="text-sm text-muted-foreground whitespace-pre-wrap">{gptInsight.reasoning}</p>
+                  </div>
+
+                  {gptInsight.risks && gptInsight.risks.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2 flex items-center gap-2 text-red-600">
+                        <AlertTriangle className="h-4 w-4" />
+                        Key Risks
+                      </h4>
+                      <ul className="space-y-1">
+                        {gptInsight.risks.map((risk: string, idx: number) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <XCircle className="h-4 w-4 text-red-500 mt-0.5 flex-shrink-0" />
+                            {risk}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  {gptInsight.opportunities && gptInsight.opportunities.length > 0 && (
+                    <div>
+                      <h4 className="font-semibold mb-2 flex items-center gap-2 text-green-600">
+                        <CheckCircle className="h-4 w-4" />
+                        Opportunities
+                      </h4>
+                      <ul className="space-y-1">
+                        {gptInsight.opportunities.map((opp: string, idx: number) => (
+                          <li key={idx} className="text-sm text-muted-foreground flex items-start gap-2">
+                            <CheckCircle className="h-4 w-4 text-green-500 mt-0.5 flex-shrink-0" />
+                            {opp}
+                          </li>
+                        ))}
+                      </ul>
+                    </div>
+                  )}
+
+                  <div className="flex items-center gap-4 pt-2 border-t">
+                    <Badge className={getActionColor(gptInsight.recommendation)}>
+                      GPT: {gptInsight.recommendation.toUpperCase().replace('_', ' ')}
+                    </Badge>
+                    <Badge variant="outline">
+                      {(gptInsight.confidence * 100).toFixed(0)}% Confidence
+                    </Badge>
+                    <Badge variant="secondary">
+                      <Clock className="h-3 w-3 mr-1" />
+                      {gptInsight.timeframe}
+                    </Badge>
+                  </div>
+                </CardContent>
+              </Card>
+            )}
 
             {/* Key Metrics */}
             <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-4">

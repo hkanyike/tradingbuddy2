@@ -48,8 +48,19 @@ export class NewsSentimentEngine {
   private eventsCache: Map<string, NewsEvent[]> = new Map();
   private lastUpdateTime = 0;
   private updateInterval = 60000; // 1 minute
+  
+  // API Keys
+  private newsApiKey: string | null = null;
+  private benzingaApiKey: string | null = null;
 
   constructor() {
+    // Load API keys from environment
+    this.newsApiKey = process.env.NEWS_API_KEY || null;
+    this.benzingaApiKey = process.env.BENZINGA_API_KEY || null;
+    
+    console.log('News API configured:', !!this.newsApiKey);
+    console.log('Benzinga API configured:', !!this.benzingaApiKey);
+    
     this.startPeriodicUpdate();
   }
 
@@ -188,26 +199,145 @@ export class NewsSentimentEngine {
   }
 
   private async fetchNewsForSymbol(symbol: string): Promise<NewsArticle[]> {
-    // In production, this would integrate with news APIs like:
-    // - NewsAPI
-    // - Alpha Vantage News
-    // - Benzinga News
-    // - Financial Modeling Prep
+    // Try News API first
+    if (this.newsApiKey) {
+      try {
+        const newsApiArticles = await this.fetchFromNewsAPI(symbol, 50);
+        if (newsApiArticles.length > 0) {
+          console.log(`✅ Fetched ${newsApiArticles.length} articles from News API for ${symbol}`);
+          return newsApiArticles;
+        }
+      } catch (error) {
+        console.error('News API error:', error);
+      }
+    }
     
-    // For now, return simulated data
-    const mockNews: NewsArticle[] = [
+    // Try Benzinga if News API fails or not configured
+    if (this.benzingaApiKey) {
+      try {
+        const benzingaArticles = await this.fetchFromBenzinga(symbol, 50);
+        if (benzingaArticles.length > 0) {
+          console.log(`✅ Fetched ${benzingaArticles.length} articles from Benzinga for ${symbol}`);
+          return benzingaArticles;
+        }
+      } catch (error) {
+        console.error('Benzinga API error:', error);
+      }
+    }
+    
+    // Fallback to mock data
+    console.log(`⚠️ No news APIs configured, using mock data for ${symbol}`);
+    return this.generateMockNews(symbol);
+  }
+  
+  private async fetchFromNewsAPI(symbol: string, limit: number): Promise<NewsArticle[]> {
+    const response = await fetch(
+      `https://newsapi.org/v2/everything?q=${symbol}&sortBy=publishedAt&pageSize=${limit}&apiKey=${this.newsApiKey}`
+    );
+    
+    if (!response.ok) throw new Error(`News API error: ${response.status}`);
+    
+    const data = await response.json();
+    
+    return (data.articles || []).map((article: any, index: number) => ({
+      id: `newsapi-${symbol}-${index}-${Date.now()}`,
+      title: article.title || '',
+      content: article.content || article.description || '',
+      summary: article.description || '',
+      publishedAt: new Date(article.publishedAt).getTime(),
+      source: article.source?.name || 'News API',
+      url: article.url || '',
+      symbols: [symbol],
+      category: this.categorizeArticle(article.title + ' ' + article.description),
+      sentiment: this.analyzeSentimentSimple(article.title + ' ' + article.description),
+      confidence: 0.7,
+      impact: 'medium' as const,
+      keywords: this.extractKeywords(article.title + ' ' + article.description)
+    }));
+  }
+  
+  private async fetchFromBenzinga(symbol: string, limit: number): Promise<NewsArticle[]> {
+    const response = await fetch(
+      `https://api.benzinga.com/api/v2/news?tickers=${symbol}&pageSize=${limit}&token=${this.benzingaApiKey}`
+    );
+    
+    if (!response.ok) throw new Error(`Benzinga API error: ${response.status}`);
+    
+    const data = await response.json();
+    
+    return (data || []).map((article: any, index: number) => ({
+      id: `benzinga-${symbol}-${index}-${Date.now()}`,
+      title: article.title || '',
+      content: article.body || article.teaser || '',
+      summary: article.teaser || '',
+      publishedAt: new Date(article.created).getTime(),
+      source: 'Benzinga',
+      url: article.url || '',
+      symbols: article.stocks || [symbol],
+      category: this.categorizeArticle(article.title),
+      sentiment: this.analyzeSentimentSimple(article.title + ' ' + article.teaser),
+      confidence: 0.8,
+      impact: article.importance ? (article.importance > 3 ? 'high' : 'medium') : 'low',
+      keywords: article.tags || this.extractKeywords(article.title)
+    }));
+  }
+  
+  private analyzeSentimentSimple(text: string): number {
+    const positiveWords = ['beat', 'exceed', 'growth', 'profit', 'gain', 'surge', 'rally', 'upgrade', 'strong', 'record'];
+    const negativeWords = ['miss', 'fall', 'loss', 'decline', 'drop', 'downgrade', 'weak', 'concern', 'risk', 'cut'];
+    
+    const lowerText = text.toLowerCase();
+    let score = 0;
+    
+    positiveWords.forEach(word => {
+      if (lowerText.includes(word)) score += 0.1;
+    });
+    
+    negativeWords.forEach(word => {
+      if (lowerText.includes(word)) score -= 0.1;
+    });
+    
+    return Math.max(-1, Math.min(1, score));
+  }
+  
+  private categorizeArticle(text: string): 'earnings' | 'merger' | 'regulatory' | 'market' | 'economic' | 'other' {
+    const lowerText = text.toLowerCase();
+    if (lowerText.includes('earnings') || lowerText.includes('revenue') || lowerText.includes('profit')) return 'earnings';
+    if (lowerText.includes('merger') || lowerText.includes('acquisition') || lowerText.includes('buyout')) return 'merger';
+    if (lowerText.includes('fda') || lowerText.includes('regulatory') || lowerText.includes('sec')) return 'regulatory';
+    if (lowerText.includes('market') || lowerText.includes('trading') || lowerText.includes('index')) return 'market';
+    if (lowerText.includes('fed') || lowerText.includes('inflation') || lowerText.includes('gdp')) return 'economic';
+    return 'other';
+  }
+  
+  private extractKeywords(text: string): string[] {
+    const words = text.toLowerCase().match(/\b\w{4,}\b/g) || [];
+    const frequency: Record<string, number> = {};
+    
+    words.forEach(word => {
+      frequency[word] = (frequency[word] || 0) + 1;
+    });
+    
+    return Object.entries(frequency)
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 5)
+      .map(([word]) => word);
+  }
+  
+  private generateMockNews(symbol: string): NewsArticle[] {
+    return [
       {
         id: `news_${symbol}_${Date.now()}`,
         title: `${symbol} Reports Strong Q4 Earnings, Beats Expectations`,
         content: `${symbol} reported better-than-expected earnings for the fourth quarter, with revenue growing 15% year-over-year. The company's strong performance was driven by increased demand for its products and services.`,
         summary: `${symbol} Q4 earnings beat expectations with 15% revenue growth`,
-        publishedAt: Date.now() - Math.random() * 3600000, // Within last hour
+        publishedAt: Date.now() - Math.random() * 3600000,
         source: 'Financial News',
         url: `https://example.com/news/${symbol}-earnings`,
         symbols: [symbol],
         category: 'earnings',
-        sentiment: 0.7 + Math.random() * 0.3, // 0.7 to 1.0
-        confidence: 0.8 + Math.random() * 0.2, // 0.8 to 1.0
+        sentiment: 0.7 + Math.random() * 0.3,
+        confidence: 0.8 + Math.random() * 0.2,
         impact: 'high',
         keywords: ['earnings', 'revenue', 'growth', 'beat', 'expectations']
       },
@@ -216,19 +346,17 @@ export class NewsSentimentEngine {
         title: `Analysts Upgrade ${symbol} Price Target Following Strong Performance`,
         content: `Several Wall Street analysts have upgraded their price targets for ${symbol} following the company's strong quarterly results and positive outlook for the coming year.`,
         summary: `Analysts upgrade ${symbol} price target after strong results`,
-        publishedAt: Date.now() - Math.random() * 7200000, // Within last 2 hours
+        publishedAt: Date.now() - Math.random() * 7200000,
         source: 'Market Watch',
         url: `https://example.com/news/${symbol}-upgrade`,
         symbols: [symbol],
         category: 'market',
-        sentiment: 0.6 + Math.random() * 0.4, // 0.6 to 1.0
-        confidence: 0.7 + Math.random() * 0.3, // 0.7 to 1.0
+        sentiment: 0.6 + Math.random() * 0.4,
+        confidence: 0.7 + Math.random() * 0.3,
         impact: 'medium',
         keywords: ['upgrade', 'price target', 'analysts', 'outlook']
       }
     ];
-
-    return mockNews;
   }
 
   private async analyzeSentiment(symbol: string, news: NewsArticle[]): Promise<SentimentAnalysis> {

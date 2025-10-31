@@ -31,53 +31,114 @@ export interface FutureQuote {
 
 export class MarketDataService {
   private config: MarketDataConfig;
+  private polygonKey: string | null = null;
+  private alphaVantageKey: string | null = null;
 
   constructor(config: MarketDataConfig = {}) {
     this.config = {
       baseUrl: 'https://api.polygon.io',
       ...config
     };
+    
+    // Load API keys from environment
+    this.polygonKey = process.env.POLYGON_API_KEY || null;
+    this.alphaVantageKey = process.env.ALPHA_VANTAGE_API_KEY || null;
+    
+    console.log('Polygon API configured:', !!this.polygonKey);
+    console.log('Alpha Vantage API configured:', !!this.alphaVantageKey);
   }
 
   // Get real market indexes data
   async getMarketIndexes(): Promise<MarketIndex[]> {
     try {
-      // For now, we'll use a free API or fallback to a reliable source
-      // In production, you'd use a paid service like Polygon, Alpha Vantage, or IEX
       const symbols = ['SPY', 'QQQ', 'DIA', 'IWM'];
       const indexes: MarketIndex[] = [];
 
-      for (const symbol of symbols) {
-        try {
-          // Using a free API like Alpha Vantage or IEX Cloud
-          const response = await fetch(
-            `https://api.iexcloud.io/v1/data/core/quote/${symbol}?token=${this.config.apiKey || 'pk_test'}`
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            indexes.push({
-              symbol: data.symbol,
-              name: data.companyName || symbol,
-              price: data.latestPrice || 0,
-              change: data.change || 0,
-              changePercent: data.changePercent || 0
-            });
-          } else {
-            // Fallback to mock data if API fails
-            indexes.push(this.getMockIndex(symbol));
+      // Try Polygon first
+      if (this.polygonKey) {
+        for (const symbol of symbols) {
+          try {
+            const response = await fetch(
+              `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${this.polygonKey}`
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.results && data.results[0]) {
+                const result = data.results[0];
+                const change = result.c - result.o;
+                const changePercent = (change / result.o) * 100;
+                indexes.push({
+                  symbol,
+                  name: this.getIndexName(symbol),
+                  price: result.c,
+                  change,
+                  changePercent
+                });
+                continue;
+              }
+            }
+          } catch (error) {
+            console.warn(`Polygon failed for ${symbol}:`, error);
           }
-        } catch (error) {
-          console.warn(`Failed to fetch data for ${symbol}:`, error);
-          indexes.push(this.getMockIndex(symbol));
+        }
+        
+        if (indexes.length > 0) {
+          console.log(`✅ Fetched ${indexes.length} indexes from Polygon`);
+          return indexes;
         }
       }
 
-      return indexes;
+      // Try Alpha Vantage if Polygon fails
+      if (this.alphaVantageKey) {
+        for (const symbol of symbols) {
+          try {
+            const response = await fetch(
+              `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.alphaVantageKey}`
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              const quote = data['Global Quote'];
+              if (quote) {
+                indexes.push({
+                  symbol,
+                  name: this.getIndexName(symbol),
+                  price: parseFloat(quote['05. price']),
+                  change: parseFloat(quote['09. change']),
+                  changePercent: parseFloat(quote['10. change percent'].replace('%', ''))
+                });
+                continue;
+              }
+            }
+          } catch (error) {
+            console.warn(`Alpha Vantage failed for ${symbol}:`, error);
+          }
+        }
+        
+        if (indexes.length > 0) {
+          console.log(`✅ Fetched ${indexes.length} indexes from Alpha Vantage`);
+          return indexes;
+        }
+      }
+
+      // Fallback to mock data
+      console.log('⚠️ No market data APIs configured, using mock data');
+      return this.getMockIndexes();
     } catch (error) {
       console.error('Error fetching market indexes:', error);
       return this.getMockIndexes();
     }
+  }
+  
+  private getIndexName(symbol: string): string {
+    const names: Record<string, string> = {
+      'SPY': 'S&P 500',
+      'QQQ': 'Nasdaq 100',
+      'DIA': 'Dow Jones',
+      'IWM': 'Russell 2000'
+    };
+    return names[symbol] || symbol;
   }
 
   // Get real stock quotes
@@ -85,32 +146,79 @@ export class MarketDataService {
     try {
       const quotes: StockQuote[] = [];
 
-      for (const symbol of symbols) {
-        try {
-          const response = await fetch(
-            `https://api.iexcloud.io/v1/data/core/quote/${symbol}?token=${this.config.apiKey || 'pk_test'}`
-          );
-          
-          if (response.ok) {
-            const data = await response.json();
-            quotes.push({
-              symbol: data.symbol,
-              name: data.companyName || symbol,
-              price: data.latestPrice || 0,
-              change: data.change || 0,
-              changePercent: data.changePercent || 0,
-              volume: data.volume || 0
-            });
-          } else {
-            quotes.push(this.getMockStock(symbol));
+      // Try Polygon first
+      if (this.polygonKey) {
+        for (const symbol of symbols) {
+          try {
+            const response = await fetch(
+              `https://api.polygon.io/v2/aggs/ticker/${symbol}/prev?adjusted=true&apiKey=${this.polygonKey}`
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              if (data.results && data.results[0]) {
+                const result = data.results[0];
+                const change = result.c - result.o;
+                const changePercent = (change / result.o) * 100;
+                quotes.push({
+                  symbol,
+                  name: symbol,
+                  price: result.c,
+                  change,
+                  changePercent,
+                  volume: result.v
+                });
+                continue;
+              }
+            }
+          } catch (error) {
+            console.warn(`Polygon failed for ${symbol}:`, error);
           }
-        } catch (error) {
-          console.warn(`Failed to fetch data for ${symbol}:`, error);
-          quotes.push(this.getMockStock(symbol));
+        }
+        
+        if (quotes.length > 0) {
+          console.log(`✅ Fetched ${quotes.length} quotes from Polygon`);
+          return quotes;
         }
       }
 
-      return quotes;
+      // Try Alpha Vantage if Polygon fails
+      if (this.alphaVantageKey) {
+        for (const symbol of symbols) {
+          try {
+            const response = await fetch(
+              `https://www.alphavantage.co/query?function=GLOBAL_QUOTE&symbol=${symbol}&apikey=${this.alphaVantageKey}`
+            );
+            
+            if (response.ok) {
+              const data = await response.json();
+              const quote = data['Global Quote'];
+              if (quote) {
+                quotes.push({
+                  symbol,
+                  name: symbol,
+                  price: parseFloat(quote['05. price']),
+                  change: parseFloat(quote['09. change']),
+                  changePercent: parseFloat(quote['10. change percent'].replace('%', '')),
+                  volume: parseInt(quote['06. volume'])
+                });
+                continue;
+              }
+            }
+          } catch (error) {
+            console.warn(`Alpha Vantage failed for ${symbol}:`, error);
+          }
+        }
+        
+        if (quotes.length > 0) {
+          console.log(`✅ Fetched ${quotes.length} quotes from Alpha Vantage`);
+          return quotes;
+        }
+      }
+
+      // Fallback to mock data
+      console.log('⚠️ No market data APIs configured, using mock data');
+      return symbols.map(s => this.getMockStock(s));
     } catch (error) {
       console.error('Error fetching stock quotes:', error);
       return this.getMockStocks();
