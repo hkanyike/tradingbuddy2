@@ -57,9 +57,20 @@ export default function ModelsPage() {
   const [isLoading, setIsLoading] = useState(true);
   const [selectedTab, setSelectedTab] = useState('overview');
   const [trainingProgress, setTrainingProgress] = useState<Record<string, number>>({});
+  const [hasError, setHasError] = useState(false);
 
   useEffect(() => {
     loadModels();
+    
+    // Global error handler for the page
+    const handleError = (event: ErrorEvent) => {
+      console.error('Models page error:', event.error);
+      setHasError(true);
+      toast.error('An error occurred. Please refresh the page.');
+    };
+    
+    window.addEventListener('error', handleError);
+    return () => window.removeEventListener('error', handleError);
   }, []);
 
   const loadModels = async () => {
@@ -68,7 +79,20 @@ export default function ModelsPage() {
       const response = await fetch('/api/ml/models');
       if (response.ok) {
         const data = await response.json();
-        setModels(data.models || []);
+        // Transform the data to match the Model interface
+        const transformedModels = (data.models || []).map((m: any) => ({
+          id: m.id || 'unknown',
+          name: m.name || 'Unnamed Model',
+          version: m.version || '1.0.0',
+          type: m.config?.type || 'classification',
+          algorithm: m.config?.algorithm || 'xgboost',
+          status: m.status || 'training',
+          metrics: m.metrics || {},
+          trainingDataSize: m.trainingDataSize || 0,
+          trainedAt: m.trainedAt || Date.now(),
+          featureImportance: m.featureImportance
+        }));
+        setModels(transformedModels);
       } else {
         console.error('Failed to load models');
         toast.error('Failed to load models');
@@ -125,10 +149,27 @@ export default function ModelsPage() {
       if (response.ok) {
         const result = await response.json();
         toast.success('Model training started');
-        setModels(prev => [...prev, result.model]);
+        
+        // Transform the model to match the Model interface
+        const transformedModel = {
+          id: result.model?.id || 'unknown',
+          name: result.model?.name || 'Unnamed Model',
+          version: result.model?.version || '1.0.0',
+          type: result.model?.config?.type || 'classification',
+          algorithm: result.model?.config?.algorithm || 'xgboost',
+          status: result.model?.status || 'training',
+          metrics: result.model?.metrics || {},
+          trainingDataSize: result.model?.trainingDataSize || 0,
+          trainedAt: result.model?.trainedAt || Date.now(),
+          featureImportance: result.model?.featureImportance
+        };
+        
+        setModels(prev => [...prev, transformedModel]);
         
         // Simulate training progress
-        simulateTrainingProgress(result.model.id);
+        if (transformedModel.id) {
+          simulateTrainingProgress(transformedModel.id);
+        }
       } else {
         const error = await response.json();
         toast.error(error.error || 'Failed to start training');
@@ -140,6 +181,8 @@ export default function ModelsPage() {
   };
 
   const simulateTrainingProgress = (modelId: string) => {
+    if (!modelId) return;
+    
     let progress = 0;
     const interval = setInterval(() => {
       progress += Math.random() * 10;
@@ -148,9 +191,13 @@ export default function ModelsPage() {
         clearInterval(interval);
         // Update model status to ready
         setModels(prev => prev.map(model => 
-          model.id === modelId ? { ...model, status: 'ready' } : model
+          model?.id === modelId ? { ...model, status: 'ready' as const } : model
         ));
-        delete trainingProgress[modelId];
+        setTrainingProgress(prev => {
+          const newProgress = { ...prev };
+          delete newProgress[modelId];
+          return newProgress;
+        });
         toast.success('Model training completed');
       }
       setTrainingProgress(prev => ({ ...prev, [modelId]: progress }));
@@ -158,13 +205,18 @@ export default function ModelsPage() {
   };
 
   const deleteModel = async (modelId: string) => {
+    if (!modelId) {
+      toast.error('Invalid model ID');
+      return;
+    }
+    
     try {
       const response = await fetch(`/api/ml/models/${modelId}`, {
         method: 'DELETE',
       });
 
       if (response.ok) {
-        setModels(prev => prev.filter(model => model.id !== modelId));
+        setModels(prev => prev.filter(model => model?.id !== modelId));
         toast.success('Model deleted');
       } else {
         toast.error('Failed to delete model');
@@ -217,6 +269,29 @@ export default function ModelsPage() {
         return value.toFixed(3);
     }
   };
+
+  if (hasError) {
+    return (
+      <div className="flex h-screen bg-background items-center justify-center">
+        <Card className="max-w-md p-6">
+          <CardHeader>
+            <CardTitle className="flex items-center gap-2 text-red-600">
+              <AlertCircle className="h-5 w-5" />
+              Something Went Wrong
+            </CardTitle>
+          </CardHeader>
+          <CardContent>
+            <p className="text-muted-foreground mb-4">
+              We encountered an error loading the models page. Please try refreshing.
+            </p>
+            <Button onClick={() => window.location.reload()} className="w-full">
+              Refresh Page
+            </Button>
+          </CardContent>
+        </Card>
+      </div>
+    );
+  }
 
   if (isLoading) {
     return (
@@ -337,7 +412,7 @@ export default function ModelsPage() {
                         <div>
                           <h3 className="font-medium">{model.name}</h3>
                           <p className="text-sm text-muted-foreground">
-                            {model.algorithm.toUpperCase()} • {model.type}
+                            {model.algorithm?.toUpperCase() || 'N/A'} • {model.type || 'N/A'}
                           </p>
                         </div>
                       </div>
@@ -391,7 +466,7 @@ export default function ModelsPage() {
                       </div>
                     </div>
                     <CardDescription>
-                      {model.algorithm.toUpperCase()} • {model.type} • v{model.version}
+                      {model.algorithm?.toUpperCase() || 'N/A'} • {model.type || 'N/A'} • v{model.version || '1.0.0'}
                     </CardDescription>
                   </CardHeader>
                   <CardContent className="space-y-4">
@@ -434,8 +509,8 @@ export default function ModelsPage() {
 
                     <div className="pt-2 border-t">
                       <div className="flex justify-between text-xs text-muted-foreground">
-                        <span>Training Data: {model.trainingDataSize.toLocaleString()} samples</span>
-                        <span>{new Date(model.trainedAt).toLocaleDateString()}</span>
+                        <span>Training Data: {(model.trainingDataSize || 0).toLocaleString()} samples</span>
+                        <span>{model.trainedAt ? new Date(model.trainedAt).toLocaleDateString() : 'N/A'}</span>
                       </div>
                     </div>
                   </CardContent>
@@ -473,7 +548,7 @@ export default function ModelsPage() {
                           <div>
                             <h3 className="font-medium">{model.name}</h3>
                             <p className="text-sm text-muted-foreground">
-                              {model.algorithm.toUpperCase()} • {model.type}
+                              {model.algorithm?.toUpperCase() || 'N/A'} • {model.type || 'N/A'}
                             </p>
                           </div>
                         </div>
