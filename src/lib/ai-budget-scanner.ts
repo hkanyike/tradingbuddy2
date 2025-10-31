@@ -436,9 +436,17 @@ class AIBudgetScanner {
     const moveDirection = contract.type === 'call' ? 1 : -1;
     const favorableMove = expectedMove * moveDirection > 0;
 
-    // Calculate potential profit
-    const contractsAffordable = Math.floor(request.budget / (contract.price * 100)) / 2;
-    const recommendedContracts = Math.max(1, Math.floor(contractsAffordable));
+    // Calculate position sizing based on risk tolerance
+    const riskMultipliers = {
+      low: 0.15,
+      medium: 0.25,
+      high: 0.35
+    };
+    const maxAllocation = request.budget * riskMultipliers[request.riskTolerance];
+    
+    // Calculate potential profit - respect position sizing limits
+    const contractsAffordableByBudget = Math.floor(maxAllocation / (contract.price * 100));
+    const recommendedContracts = Math.max(1, contractsAffordableByBudget);
     const allocation = recommendedContracts * contract.price * 100;
 
     // Estimate profit at price target
