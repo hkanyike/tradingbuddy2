@@ -61,6 +61,9 @@ export const Header = () => {
                 <Link href="/ai">
                   <Button variant="ghost">AI Agent</Button>
                 </Link>
+                <Link href="/ai-scanner">
+                  <Button variant="ghost">AI Scanner</Button>
+                </Link>
                 <Link href="/help">
                   <Button variant="ghost">Help</Button>
                 </Link>
